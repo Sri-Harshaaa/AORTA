@@ -19,6 +19,9 @@ WORKDIR /app
 
 COPY --from=builder /app/build/aorta_lb /app/aorta_lb
 
+# Baked in so the image runs standalone; docker-compose bind-mounts over it.
+COPY --from=builder /app/config /app/config
+
 EXPOSE 9000
 
 ENTRYPOINT ["/app/aorta_lb"]

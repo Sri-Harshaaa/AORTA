@@ -1,0 +1,17 @@
+# This project is built and run on Linux. Checking anything out with CRLF
+# breaks shell scripts ("bad interpreter: /usr/bin/env bash^M") and confuses
+# the Docker build, so normalise everything to LF regardless of host.
+* text=auto eol=lf
+
+*.sh    text eol=lf
+*.cpp   text eol=lf
+*.hpp   text eol=lf
+*.conf  text eol=lf
+*.yml   text eol=lf
+*.md    text eol=lf
+Dockerfile*  text eol=lf
+CMakeLists.txt text eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary

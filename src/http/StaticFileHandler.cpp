@@ -1,8 +1,57 @@
 #include "http/StaticFileHandler.hpp"
 
+#include <cstdlib>
+
+#include <stdlib.h>
 #include <sys/stat.h>
 
-StaticFileHandler::StaticFileHandler(const std::string& directory) : public_directory(directory) {
+StaticFileHandler::StaticFileHandler(const std::string& directory)
+    : public_directory(directory) {
+
+    char* resolved = realpath(directory.c_str(), nullptr);
+
+    if(resolved != nullptr) {
+        canonical_root = resolved;
+        free(resolved);
+    }
+}
+
+
+bool StaticFileHandler::resolveWithinRoot(
+    const std::string& path,
+    std::string& resolved_path
+) const {
+    if(canonical_root.empty()) {
+        return false;
+    }
+
+    char* resolved = realpath(path.c_str(), nullptr);
+
+    if(resolved == nullptr) {
+        return false;
+    }
+
+    resolved_path = resolved;
+
+    free(resolved);
+
+    if(resolved_path == canonical_root) {
+        return true;
+    }
+
+    /*
+     * The separator matters: without it "/srv/public-secrets" would pass a
+     * prefix test against a root of "/srv/public".
+     */
+    if(resolved_path.size() <= canonical_root.size()) {
+        return false;
+    }
+
+    if(resolved_path.compare(0, canonical_root.size(), canonical_root) != 0) {
+        return false;
+    }
+
+    return resolved_path[canonical_root.size()] == '/';
 }
 
 bool StaticFileHandler::isSafePath(const std::string& target) const {
@@ -79,7 +128,16 @@ bool StaticFileHandler::handle(const HttpRequest& request, HttpResponse& respons
         return true;
     }
 
-    std::string file_path = getFilePath(request.target);
+    std::string file_path;
+
+    if(!resolveWithinRoot(getFilePath(request.target), file_path)) {
+        response.setStatus(404, "Not Found");
+        response.setBody("Not Found");
+        response.setContentType("text/plain");
+        response.setConnection("keep-alive");
+        response.setContentLength();
+        return true;
+    }
 
     struct stat file_info;
 

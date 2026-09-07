@@ -2,8 +2,11 @@
 
 #include <algorithm>
 
-TaskManager::TaskManager()
-    : redis("redis", 6379) {
+TaskManager::TaskManager(
+    const std::string& redis_host,
+    int redis_port
+)
+    : redis(redis_host, redis_port) {
 }
 
 

@@ -2,6 +2,7 @@
 
 #include "http/HttpParser.hpp"
 
+#include <chrono>
 #include <cstddef>
 #include <deque>
 #include <string>
@@ -38,6 +39,21 @@ private:
     HttpParser parser;
 
     bool close_after_write{false};
+
+    /*
+     * Byte counters drained by the reactor into its Metrics after each read
+     * and write, so the socket layer stays unaware of metrics.
+     */
+    std::size_t pending_bytes_read{0};
+    std::size_t pending_bytes_written{0};
+
+    /*
+     * Set when the first byte of a request arrives and cleared when the parser
+     * is reset for the next one, so latency covers the whole request rather
+     * than only the handler.
+     */
+    std::chrono::steady_clock::time_point request_start{};
+    bool request_started{false};
 
     void closeOutputFile(OutputBuffer& output);
 
@@ -94,4 +110,10 @@ public:
 
     void setCloseAfterWrite(bool value);
     bool shouldCloseAfterWrite() const;
+
+    std::size_t consumeBytesRead();
+    std::size_t consumeBytesWritten();
+
+    bool hasRequestStarted() const;
+    std::chrono::steady_clock::time_point getRequestStart() const;
 };

@@ -1,11 +1,15 @@
 #include "http/HttpHandler.hpp"
 
 #include <cctype>
+#include <utility>
 
 HttpHandler::HttpHandler(
-    std::shared_ptr<TaskManager> task_manager,
-    const Metrics& metrics
-) : static_file_handler("./public"), task_manager(task_manager), metrics(metrics) {
+    std::shared_ptr<TaskStore> task_store,
+    std::shared_ptr<MetricsRegistry> metrics_registry,
+    const std::string& public_directory
+) : static_file_handler(public_directory),
+    task_store(std::move(task_store)),
+    metrics_registry(std::move(metrics_registry)) {
     registerRoutes();
 }
 
@@ -105,14 +109,18 @@ void HttpHandler::handleGetHealth(const HttpRequest& request, HttpResponse& resp
 
 void HttpHandler::handleGetMetrics(const HttpRequest& request, HttpResponse& response) {
     response.setStatus(200, "OK");
-    response.setBody(metrics.serialize());
+    response.setBody(
+        metrics_registry
+            ? metrics_registry->renderPrometheus()
+            : std::string()
+    );
     response.setContentType("text/plain; version=0.0.4");
     response.setConnection("keep-alive");
     response.setContentLength();
 }
 
 void HttpHandler::handleGetTasks(const HttpRequest& request, HttpResponse& response) {
-    std::vector<Task> tasks = task_manager->getAll();
+    std::vector<Task> tasks = task_store->getAll();
 
     std::string body = "[";
 
@@ -190,7 +198,7 @@ void HttpHandler::handlePostTask(const HttpRequest& request, HttpResponse& respo
 
     Task created_task;
 
-    if(!task_manager->create(title, created_task)) {
+    if(!task_store->create(title, created_task)) {
         response.setStatus(400, "Bad Request");
         response.setBody("Unable to create task");
         response.setContentType("text/plain");
@@ -262,7 +270,7 @@ void HttpHandler::handlePutTask(const HttpRequest& request, HttpResponse& respon
 
     Task updated_task;
 
-    if(!task_manager->update(
+    if(!task_store->update(
         id,
         title,
         completed,
@@ -316,7 +324,7 @@ void HttpHandler::handleDeleteTask(const HttpRequest& request, HttpResponse& res
         id = id * 10 + static_cast<std::size_t>(character - '0');
     }
 
-    if(!task_manager->remove(id)) {
+    if(!task_store->remove(id)) {
         response.setStatus(404, "Not Found");
         response.setBody("Task Not Found");
         response.setContentType("text/plain");

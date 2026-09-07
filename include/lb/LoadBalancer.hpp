@@ -1,8 +1,9 @@
 #pragma once
 
 #include "lb/BackendPool.hpp"
-#include "lb/ConsistentHash.hpp"
+#include "lb/BalancingStrategy.hpp"
 #include "lb/HealthChecker.hpp"
+#include "lb/LbConfig.hpp"
 #include "lb/LbMetrics.hpp"
 #include "net/Epoll.hpp"
 #include "net/Socket.hpp"
@@ -11,21 +12,13 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <unordered_map>
 
 class LoadBalancer {
 
 private:
-    static constexpr int LISTEN_PORT = 9000;
-    static constexpr int HEALTH_CHECK_INTERVAL = 5;
-
-    static constexpr std::size_t MAX_BUFFER_SIZE =
-        8 * 1024 * 1024;
-
-    static constexpr std::size_t MAX_CONNECTIONS =
-        100000;
-
     struct ConnectionPair {
 
         int client_fd{-1};
@@ -55,9 +48,11 @@ private:
         std::size_t backend_to_client_offset{0};
     };
 
-    BackendPool backend_pool;
+    LbConfig config;
 
-    ConsistentHash consistent_hash;
+    std::unique_ptr<BalancingStrategy> strategy;
+
+    BackendPool backend_pool;
 
     HealthChecker health_checker;
 
@@ -70,6 +65,12 @@ private:
     std::unordered_map<int, ConnectionPair> connections;
 
     std::unordered_map<int, int> backend_to_client;
+
+    /*
+     * Bytes currently sitting in relay buffers across every connection.
+     * Maintained incrementally by forwardData, flushData and closeConnection.
+     */
+    std::size_t buffered_bytes{0};
 
     static std::atomic<bool> shutdown_requested;
 
@@ -84,11 +85,6 @@ private:
         uint32_t events
     );
 
-    bool handleMetricsRequest(
-        int client_fd,
-        ConnectionPair& connection
-    );
-
     void forwardData(
         int source_fd,
         std::string& output_buffer,
@@ -101,10 +97,15 @@ private:
         std::size_t& offset
     );
 
-    void updateWriteInterest(
-        int fd,
-        bool enabled
-    );
+    /*
+     * True when a direction still has room to buffer. Used to gate EPOLLIN so
+     * a congested peer stops us reading instead of growing memory without
+     * bound - real backpressure rather than dropping the connection.
+     */
+    bool canRead(
+        const std::string& output_buffer,
+        std::size_t offset
+    ) const;
 
     void closeConnection(
         int client_fd
@@ -122,7 +123,7 @@ private:
     );
 
 public:
-    LoadBalancer();
+    explicit LoadBalancer(const LbConfig& config);
 
     void start();
 };

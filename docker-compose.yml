@@ -12,42 +12,68 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.server
-    command: ["8081"]
+    command: ["--port", "8081"]
+    environment:
+      # Override to "threaded" to run the thread-per-connection model.
+      AORTA_MODE: "${AORTA_MODE:-epoll}"
+      AORTA_REDIS_HOST: redis
     expose:
       - "8081"
     depends_on:
       - redis
     networks:
       - aorta
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   server2:
     build:
       context: .
       dockerfile: Dockerfile.server
-    command: ["8082"]
+    command: ["--port", "8082"]
+    environment:
+      AORTA_MODE: "${AORTA_MODE:-epoll}"
+      AORTA_REDIS_HOST: redis
     expose:
       - "8082"
     depends_on:
       - redis
     networks:
       - aorta
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   server3:
     build:
       context: .
       dockerfile: Dockerfile.server
-    command: ["8083"]
+    command: ["--port", "8083"]
+    environment:
+      AORTA_MODE: "${AORTA_MODE:-epoll}"
+      AORTA_REDIS_HOST: redis
     expose:
       - "8083"
     depends_on:
       - redis
     networks:
       - aorta
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   lb:
     build:
       context: .
       dockerfile: Dockerfile.lb
+    environment:
+      # round_robin | least_connections | consistent_hash
+      AORTA_LB_STRATEGY: "${AORTA_LB_STRATEGY:-round_robin}"
+      AORTA_LB_BACKENDS: /app/config/backends.conf
     ports:
       - "9000:9000"
     volumes:
@@ -58,6 +84,10 @@ services:
       - server3
     networks:
       - aorta
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
 networks:
   aorta:

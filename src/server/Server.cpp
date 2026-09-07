@@ -1,69 +1,72 @@
 #include "server/Server.hpp"
+#include "server/Shutdown.hpp"
 
 #include <chrono>
-#include <csignal>
 #include <iostream>
 #include <thread>
 
-volatile std::sig_atomic_t shutdown_requested = 0;
+Server::Server(const ServerConfig& server_config)
+    : config(server_config),
+      registry(std::make_shared<MetricsRegistry>()) {
 
+    if(config.workers <= 0) {
 
-namespace {
+        const unsigned int detected =
+            std::thread::hardware_concurrency();
 
-void handleSignal(int signal) {
-    if(signal == SIGINT || signal == SIGTERM) {
-        shutdown_requested = 1;
-    }
-}
-
-}
-
-
-Server::Server(int port)
-    : port(port) {
-
-    reactor_count = std::thread::hardware_concurrency();
-
-    if(reactor_count == 0) {
-        reactor_count = 1;
+        config.workers =
+            detected == 0 ? 1 : static_cast<int>(detected);
     }
 
-    task_manager = std::make_shared<TaskManager>();
+    registry->setMode(ServerConfig::modeName(config.mode));
 
-    std::signal(SIGINT, handleSignal);
-    std::signal(SIGTERM, handleSignal);
+    shutdown::install();
 
-    std::cout << "Creating " << reactor_count
-              << " reactors on port "
-              << port
-              << std::endl;
+    config.print();
 }
 
 
 void Server::start() {
-    for(int i = 0; i < reactor_count; i++) {
+    reactors.reserve(static_cast<std::size_t>(config.workers));
+
+    /*
+     * Every reactor is constructed before any thread starts, so each has
+     * registered its counters with the registry by the time a scrape can
+     * arrive.
+     */
+    for(int i = 0; i < config.workers; i++) {
         reactors.push_back(
             std::make_unique<Reactor>(
                 i,
-                task_manager
+                config,
+                registry
             )
         );
     }
 
-    for(int i = 0; i < reactor_count; i++) {
+    threads.reserve(static_cast<std::size_t>(config.workers));
+
+    for(int i = 0; i < config.workers; i++) {
         threads.emplace_back([this, i]() {
-            reactors[i]->run(port);
+            reactors[static_cast<std::size_t>(i)]->run();
         });
     }
 
-    while(shutdown_requested == 0) {
+    std::cout
+        << "Listening on port "
+        << config.port
+        << " with "
+        << config.workers
+        << " reactors"
+        << std::endl;
+
+    while(!shutdown::isRequested()) {
         std::this_thread::sleep_for(
             std::chrono::milliseconds(100)
         );
     }
 
-    std::cout << std::endl;
-    std::cout << "Shutdown requested" << std::endl;
+    std::cout << "\nShutdown requested" << std::endl;
 
     for(auto& thread : threads) {
         if(thread.joinable()) {

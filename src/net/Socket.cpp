@@ -2,13 +2,15 @@
 
 #include <iostream>
 
+#include <sys/time.h>
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <unistd.h>
 #include <fcntl.h>
 
-Socket::Socket() {
+Socket::Socket(bool non_blocking) {
     fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if(fd == -1) {
@@ -48,28 +50,25 @@ Socket::Socket() {
         return;
     }
 
-    if(!setNonBlocking(fd)) {
+    if(non_blocking && !setNonBlocking(fd)) {
         close(fd);
         fd = -1;
         return;
     }
-
-    std::cout << "Socket created FD: " << fd << std::endl;
 }
 
 Socket::~Socket() {
     if(fd != -1) {
         close(fd);
-        std::cout << "Socket closed FD: " << fd << std::endl;
     }
 }
 
-bool Socket::bindAndListen(int port) {
+bool Socket::bindAndListen(int port, int backlog) {
     if(fd == -1) {
         return false;
     }
 
-    struct sockaddr_in address;
+    struct sockaddr_in address{};
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
@@ -86,16 +85,12 @@ bool Socket::bindAndListen(int port) {
         return false;
     }
 
-    std::cout << "bind() successful" << std::endl;
-
-    result = listen(fd, 128);
+    result = listen(fd, backlog);
 
     if(result == -1) {
         std::cerr << "listen() failed" << std::endl;
         return false;
     }
-
-    std::cout << "listen() successful" << std::endl;
 
     return true;
 }
@@ -143,4 +138,36 @@ bool Socket::setNoDelay(int fd) {
     }
 
     return true;
+}
+
+
+bool Socket::setReceiveTimeout(int fd, int seconds) {
+    struct timeval timeout{};
+
+    timeout.tv_sec = seconds;
+    timeout.tv_usec = 0;
+
+    return setsockopt(
+        fd,
+        SOL_SOCKET,
+        SO_RCVTIMEO,
+        &timeout,
+        sizeof(timeout)
+    ) != -1;
+}
+
+
+bool Socket::setSendTimeout(int fd, int seconds) {
+    struct timeval timeout{};
+
+    timeout.tv_sec = seconds;
+    timeout.tv_usec = 0;
+
+    return setsockopt(
+        fd,
+        SOL_SOCKET,
+        SO_SNDTIMEO,
+        &timeout,
+        sizeof(timeout)
+    ) != -1;
 }

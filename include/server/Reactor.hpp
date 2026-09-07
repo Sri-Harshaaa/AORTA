@@ -4,14 +4,23 @@
 #include "net/Epoll.hpp"
 #include "net/Connection.hpp"
 #include "net/TimerFd.hpp"
-#include "task/TaskManager.hpp"
-#include "server/Metrics.hpp"
 #include "http/HttpHandler.hpp"
+#include "server/Metrics.hpp"
+#include "server/MetricsRegistry.hpp"
+#include "server/ServerConfig.hpp"
+#include "task/TaskStore.hpp"
 
 #include <chrono>
 #include <memory>
 #include <unordered_map>
 
+/*
+ * One event loop, one listening socket, one thread.
+ *
+ * Every reactor binds the same port with SO_REUSEPORT and lets the kernel
+ * spread accepts across them. Each owns its own Redis connection so no reactor
+ * ever waits behind another's round trip.
+ */
 class Reactor {
 
 private:
@@ -25,7 +34,9 @@ private:
 
     int id;
 
-    std::shared_ptr<TaskManager> task_manager;
+    ServerConfig config;
+
+    std::shared_ptr<TaskStore> task_store;
 
     Metrics metrics;
 
@@ -49,13 +60,16 @@ private:
     void refreshDeadline(int fd, int timeout_seconds);
     void removeExpiredConnections();
 
+    void drainCounters(Connection& connection);
+
 public:
     Reactor(
         int id,
-        std::shared_ptr<TaskManager> task_manager
+        const ServerConfig& config,
+        std::shared_ptr<MetricsRegistry> registry
     );
 
-    void run(int port);
+    void run();
 
     const Metrics& getMetrics() const;
 };

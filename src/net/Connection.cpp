@@ -56,6 +56,13 @@ Connection::ReadResult Connection::read() {
     );
 
     if(bytes_received > 0) {
+        if(!request_started) {
+            request_start = std::chrono::steady_clock::now();
+            request_started = true;
+        }
+
+        pending_bytes_read += static_cast<std::size_t>(bytes_received);
+
         receive_buffer.append(buffer, bytes_received);
         return ReadResult::DataReceived;
     }
@@ -97,6 +104,9 @@ Connection::WriteResult Connection::write() {
             if(bytes_sent > 0) {
                 output.offset += bytes_sent;
 
+                pending_bytes_written +=
+                    static_cast<std::size_t>(bytes_sent);
+
                 if(output.offset == output.data.size()) {
                     output_queue_size -= output.data.size();
                     output_queue.pop_front();
@@ -135,6 +145,9 @@ Connection::WriteResult Connection::write() {
 
             if(bytes_sent > 0) {
                 output.offset += static_cast<std::size_t>(bytes_sent);
+
+                pending_bytes_written +=
+                    static_cast<std::size_t>(bytes_sent);
 
                 if(output.offset == output.file_size) {
                     closeOutputFile(output);
@@ -211,6 +224,8 @@ std::size_t Connection::getConsumedBytes() const {
 
 void Connection::resetParser() {
     parser.reset();
+
+    request_started = false;
 }
 
 
@@ -289,6 +304,34 @@ std::size_t Connection::getOutputQueueSize() const {
 
 void Connection::setCloseAfterWrite(bool value) {
     close_after_write = value;
+}
+
+
+std::size_t Connection::consumeBytesRead() {
+    const std::size_t bytes = pending_bytes_read;
+
+    pending_bytes_read = 0;
+
+    return bytes;
+}
+
+
+std::size_t Connection::consumeBytesWritten() {
+    const std::size_t bytes = pending_bytes_written;
+
+    pending_bytes_written = 0;
+
+    return bytes;
+}
+
+
+bool Connection::hasRequestStarted() const {
+    return request_started;
+}
+
+
+std::chrono::steady_clock::time_point Connection::getRequestStart() const {
+    return request_start;
 }
 
 

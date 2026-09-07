@@ -23,34 +23,42 @@ void LoadBalancer::handleSignal(int signal) {
     }
 }
 
-LoadBalancer::LoadBalancer() {
+LoadBalancer::LoadBalancer(const LbConfig& lb_config)
+    : config(lb_config),
+      strategy(BalancingStrategy::create(lb_config.strategy)) {
+
     const std::vector<Backend> configured_backends =
-        BackendConfig::load("config/backends.conf");
+        BackendConfig::load(config.backends_path);
 
     for(const Backend& backend : configured_backends) {
         backend_pool.addBackend(backend);
     }
 
-    consistent_hash.build(backend_pool);
+    if(strategy) {
+        strategy->rebuild(backend_pool);
+    }
+
+    config.print();
 
     std::cout
         << "Loaded "
         << backend_pool.size()
-        << " backends"
+        << " backends from "
+        << config.backends_path
         << std::endl;
 
-    std::cout
-        << "Consistent hash ring contains "
-        << consistent_hash.size()
-        << " virtual nodes"
-        << std::endl;
+    if(backend_pool.size() == 0) {
+        std::cerr
+            << "Warning: no backends configured, every request will fail"
+            << std::endl;
+    }
 }
 
 void LoadBalancer::start() {
     std::signal(SIGINT, LoadBalancer::handleSignal);
     std::signal(SIGTERM, LoadBalancer::handleSignal);
 
-    if(!listen_socket.bindAndListen(LISTEN_PORT)) {
+    if(!listen_socket.bindAndListen(config.listen_port)) {
         std::cerr
             << "Load Balancer listen failed"
             << std::endl;
@@ -68,7 +76,7 @@ void LoadBalancer::start() {
     }
 
     if(!health_timer.start(
-        HEALTH_CHECK_INTERVAL
+        config.health_interval
     )) {
         std::cerr
             << "Failed to start health timer"
@@ -88,7 +96,10 @@ void LoadBalancer::start() {
 
     std::cout
         << "Load Balancer listening on port "
-        << LISTEN_PORT
+        << config.listen_port
+        << " using "
+        << (strategy ? strategy->name() : "no")
+        << " strategy"
         << std::endl;
 
     struct epoll_event events[1024];
@@ -374,7 +385,12 @@ void LoadBalancer::start() {
                             const std::string body =
                                 LbMetrics::render(
                                     backend_pool,
-                                    connections.size()
+                                    connections.size(),
+                                    strategy
+                                        ? strategy->name()
+                                        : "none",
+                                    buffered_bytes,
+                                    config.max_total_buffer
                                 );
 
                             current.backend_to_client =
@@ -616,7 +632,11 @@ void LoadBalancer::start() {
                     EPOLLHUP;
 
                 if(
-                    !after_io.backend_read_closed
+                    !after_io.backend_read_closed &&
+                    canRead(
+                        after_io.backend_to_client,
+                        after_io.backend_to_client_offset
+                    )
                 ) {
                     backend_events |= EPOLLIN;
                 }
@@ -641,7 +661,11 @@ void LoadBalancer::start() {
                 EPOLLHUP;
 
             if(
-                !after_io.client_read_closed
+                !after_io.client_read_closed &&
+                canRead(
+                    after_io.client_to_backend,
+                    after_io.client_to_backend_offset
+                )
             ) {
                 client_events |= EPOLLIN;
             }
@@ -708,7 +732,7 @@ void LoadBalancer::handleAccept() {
 
         Socket::setNoDelay(client_fd);
 
-        if(connections.size() >= MAX_CONNECTIONS) {
+        if(connections.size() >= config.max_connections) {
             close(client_fd);
             continue;
         }
@@ -782,10 +806,14 @@ bool LoadBalancer::connectClientToBackend(
     ConnectionPair& connection =
         connection_it->second;
 
+    if(!strategy) {
+        return false;
+    }
+
     const auto backend_result =
-        consistent_hash.getBackend(
-            connection.client_ip,
-            backend_pool
+        strategy->select(
+            backend_pool,
+            connection.client_ip
         );
 
     if(!backend_result.has_value()) {
@@ -970,7 +998,7 @@ void LoadBalancer::forwardData(
             if(
                 pending_bytes +
                 static_cast<std::size_t>(bytes_read)
-                > MAX_BUFFER_SIZE
+                > config.max_connection_buffer
             ) {
 
                 auto backend_it =
@@ -1003,6 +1031,9 @@ void LoadBalancer::forwardData(
                 buffer,
                 static_cast<std::size_t>(bytes_read)
             );
+
+            buffered_bytes +=
+                static_cast<std::size_t>(bytes_read);
 
             continue;
         }
@@ -1114,6 +1145,13 @@ void LoadBalancer::flushData(
                     bytes_sent
                 );
 
+            if(buffered_bytes >= static_cast<std::size_t>(bytes_sent)) {
+                buffered_bytes -=
+                    static_cast<std::size_t>(bytes_sent);
+            } else {
+                buffered_bytes = 0;
+            }
+
             continue;
         }
 
@@ -1155,89 +1193,24 @@ void LoadBalancer::flushData(
     }
 }
 
-void LoadBalancer::updateWriteInterest(
-    int fd,
-    bool enabled
-) {
-    auto backend_it =
-        backend_to_client.find(fd);
-
-    if(
-        backend_it !=
-        backend_to_client.end()
-    ) {
-
-        auto connection_it =
-            connections.find(
-                backend_it->second
-            );
-
-        if(
-            connection_it ==
-            connections.end()
-        ) {
-            return;
-        }
-
-        ConnectionPair& connection =
-            connection_it->second;
-
-        uint32_t events =
-            EPOLLRDHUP |
-            EPOLLERR |
-            EPOLLHUP;
-
-        if(connection.backend_connecting) {
-            events |= EPOLLOUT;
-        } else if(
-            !connection.backend_read_closed
-        ) {
-            events |= EPOLLIN;
-        }
-
-        if(enabled) {
-            events |= EPOLLOUT;
-        }
-
-        epoll.modify(
-            fd,
-            events
-        );
-
-        return;
+bool LoadBalancer::canRead(
+    const std::string& output_buffer,
+    std::size_t offset
+) const {
+    if(buffered_bytes >= config.max_total_buffer) {
+        return false;
     }
 
-    auto connection_it =
-        connections.find(fd);
+    const std::size_t pending =
+        output_buffer.size() - offset;
 
-    if(
-        connection_it ==
-        connections.end()
-    ) {
-        return;
-    }
-
-    ConnectionPair& connection =
-        connection_it->second;
-
-    uint32_t events =
-        EPOLLRDHUP |
-        EPOLLERR |
-        EPOLLHUP;
-
-    if(!connection.client_read_closed) {
-        events |= EPOLLIN;
-    }
-
-    if(enabled) {
-        events |= EPOLLOUT;
-    }
-
-    epoll.modify(
-        fd,
-        events
-    );
+    /*
+     * Pause at half the hard cap so draining has room to resume the read
+     * before forwardData() has to drop the connection outright.
+     */
+    return pending < (config.max_connection_buffer / 2);
 }
+
 
 void LoadBalancer::handleHealthCheck() {
     health_timer.consume();
@@ -1280,6 +1253,18 @@ void LoadBalancer::closeConnection(
     }
 
     connection.closing = true;
+
+    const std::size_t still_buffered =
+        (connection.client_to_backend.size()
+            - connection.client_to_backend_offset)
+        + (connection.backend_to_client.size()
+            - connection.backend_to_client_offset);
+
+    if(buffered_bytes >= still_buffered) {
+        buffered_bytes -= still_buffered;
+    } else {
+        buffered_bytes = 0;
+    }
 
     epoll.remove(
         connection.client_fd

@@ -1,25 +1,29 @@
 #pragma once
 
+#include "server/MetricsRegistry.hpp"
 #include "server/Reactor.hpp"
-#include "task/TaskManager.hpp"
+#include "server/ServerConfig.hpp"
 
 #include <memory>
 #include <thread>
 #include <vector>
 
+/*
+ * The epoll server: one reactor per worker, each on its own thread, all
+ * bound to the same port through SO_REUSEPORT.
+ */
 class Server {
 
 private:
-    int reactor_count;
-    int port;
+    ServerConfig config;
 
-    std::shared_ptr<TaskManager> task_manager;
+    std::shared_ptr<MetricsRegistry> registry;
 
     std::vector<std::unique_ptr<Reactor>> reactors;
     std::vector<std::thread> threads;
 
 public:
-    explicit Server(int port = 8080);
+    explicit Server(const ServerConfig& config);
 
     void start();
 };

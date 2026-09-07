@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake libhiredis-dev
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Smoke test the server
+        run: |
+          # No Redis here, so only the routes that do not touch it are checked.
+          ./build/aorta --port 8099 --public ./public &
+          server_pid=$!
+          sleep 1
+
+          curl -fsS http://127.0.0.1:8099/hello  | grep -q "Hello from AORTA"
+          curl -fsS http://127.0.0.1:8099/health | grep -q "OK"
+          curl -fsS http://127.0.0.1:8099/metrics | grep -q "aorta_requests_total"
+          curl -fsS http://127.0.0.1:8099/metrics | grep -q "aorta_request_duration_seconds_bucket"
+
+          # Path traversal must not escape the document root.
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            "http://127.0.0.1:8099/../CMakeLists.txt")
+          test "$code" = "403" || test "$code" = "404"
+
+          kill "$server_pid"
+
+      - name: Smoke test the threaded model
+        run: |
+          ./build/aorta --port 8098 --mode threaded --public ./public &
+          server_pid=$!
+          sleep 1
+
+          curl -fsS http://127.0.0.1:8098/hello | grep -q "Hello from AORTA"
+          curl -fsS http://127.0.0.1:8098/metrics | grep -q 'mode="threaded"'
+
+          kill "$server_pid"
+
+      - name: Smoke test the load balancer
+        run: |
+          ./build/aorta --port 8081 --public ./public &
+          backend_pid=$!
+
+          printf '127.0.0.1:8081\n' > /tmp/backends.conf
+
+          ./build/aorta_lb --port 9099 --backends /tmp/backends.conf \
+            --strategy round_robin &
+          lb_pid=$!
+
+          sleep 2
+          curl -fsS --max-time 5 http://127.0.0.1:9099/hello | grep -q "Hello from AORTA"
+
+          kill "$lb_pid" "$backend_pid"
+
+      - name: Reject an unknown strategy
+        run: |
+          if ./build/aorta_lb --strategy nonsense; then
+            echo "expected a non-zero exit for an unknown strategy" >&2
+            exit 1
+          fi
+
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build images
+        run: |
+          docker build -f Dockerfile.server -t aorta-server .
+          docker build -f Dockerfile.lb -t aorta-lb .

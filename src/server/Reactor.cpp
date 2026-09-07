@@ -1,23 +1,53 @@
 #include "server/Reactor.hpp"
 
 #include "http/HttpResponse.hpp"
+#include "server/Shutdown.hpp"
+#include "task/TaskManager.hpp"
 
 #include <csignal>
 #include <iostream>
 #include <cerrno>
+#include <utility>
 #include <vector>
 
 #include <sys/socket.h>
 #include <unistd.h>
 
-extern volatile std::sig_atomic_t shutdown_requested;
-
 Reactor::Reactor(
-    int id,
-    std::shared_ptr<TaskManager> task_manager
-) : id(id),
-    task_manager(task_manager),
-    http_handler(task_manager, metrics) {
+    int reactor_id,
+    const ServerConfig& server_config,
+    std::shared_ptr<MetricsRegistry> registry
+) : id(reactor_id),
+    config(server_config),
+    task_store(
+        std::make_shared<TaskManager>(
+            server_config.redis_host,
+            server_config.redis_port
+        )
+    ),
+    http_handler(
+        task_store,
+        registry,
+        server_config.public_directory
+    ) {
+
+    if(registry) {
+        registry->registerSource(reactor_id, &metrics);
+    }
+}
+
+
+void Reactor::drainCounters(Connection& connection) {
+    const std::size_t read_bytes = connection.consumeBytesRead();
+    const std::size_t written_bytes = connection.consumeBytesWritten();
+
+    if(read_bytes > 0) {
+        metrics.addBytesReceived(read_bytes);
+    }
+
+    if(written_bytes > 0) {
+        metrics.addBytesSent(written_bytes);
+    }
 }
 
 void Reactor::handleAccept() {
@@ -57,6 +87,7 @@ void Reactor::handleAccept() {
 
         connections[client_fd] = std::make_unique<Connection>(client_fd, id);
 
+        metrics.incrementAccepted();
         metrics.incrementActiveConnections();
 
         refreshDeadline(
@@ -121,6 +152,8 @@ void Reactor::removeExpiredConnections() {
 
 void Reactor::handleTimer() {
     timer.consume();
+
+    metrics.tick();
 
     removeExpiredConnections();
 }
@@ -256,6 +289,21 @@ void Reactor::handleClient(int fd) {
                 }
             }
 
+            if(connection.hasRequestStarted()) {
+
+                const auto elapsed =
+                    std::chrono::steady_clock::now()
+                    - connection.getRequestStart();
+
+                metrics.recordLatency(
+                    static_cast<std::uint64_t>(
+                        std::chrono::duration_cast<
+                            std::chrono::microseconds
+                        >(elapsed).count()
+                    )
+                );
+            }
+
             connection.consumeParsedBytes();
             connection.resetParser();
 
@@ -278,6 +326,8 @@ void Reactor::handleClient(int fd) {
         return;
     }
 
+    drainCounters(connection);
+
     if(connection.hasPendingOutput()) {
         updateEvents(
             fd,
@@ -296,6 +346,8 @@ void Reactor::handleWrite(int fd) {
     Connection& connection = *(it->second);
 
     Connection::WriteResult result = connection.write();
+
+    drainCounters(connection);
 
     if(result == Connection::WriteResult::Error) {
         metrics.incrementErrors();
@@ -369,8 +421,8 @@ void Reactor::handleEvent(struct epoll_event& event) {
     }
 }
 
-void Reactor::run(int port) {
-    if(!listen_socket.bindAndListen(port)) {
+void Reactor::run() {
+    if(!listen_socket.bindAndListen(config.port, config.backlog)) {
         return;
     }
 
@@ -386,7 +438,7 @@ void Reactor::run(int port) {
         return;
     }
 
-    while(shutdown_requested == 0) {
+    while(!shutdown::isRequested()) {
         struct epoll_event events[1024];
 
         int ready = epoll.wait(events, 1024, -1);
