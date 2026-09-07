@@ -1,0 +1,17 @@
+build/
+aorta
+aorta-lb
+aorta_lb
+aorta-O0
+
+.git/
+.github/
+
+.vscode/
+
+*.o
+*.out
+*.log
+
+Dockerfile*
+docker-compose.yml

@@ -1,0 +1,4 @@
+/home/sri_harsha/Desktop/AORTA/build/CMakeFiles/aorta.dir
+/home/sri_harsha/Desktop/AORTA/build/CMakeFiles/aorta_lb.dir
+/home/sri_harsha/Desktop/AORTA/build/CMakeFiles/edit_cache.dir
+/home/sri_harsha/Desktop/AORTA/build/CMakeFiles/rebuild_cache.dir

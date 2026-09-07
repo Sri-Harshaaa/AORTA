@@ -1,0 +1,67 @@
+services:
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - aorta
+
+  server1:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    command: ["8081"]
+    expose:
+      - "8081"
+    depends_on:
+      - redis
+    networks:
+      - aorta
+
+  server2:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    command: ["8082"]
+    expose:
+      - "8082"
+    depends_on:
+      - redis
+    networks:
+      - aorta
+
+  server3:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    command: ["8083"]
+    expose:
+      - "8083"
+    depends_on:
+      - redis
+    networks:
+      - aorta
+
+  lb:
+    build:
+      context: .
+      dockerfile: Dockerfile.lb
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./config/backends.docker.conf:/app/config/backends.conf:ro
+    depends_on:
+      - server1
+      - server2
+      - server3
+    networks:
+      - aorta
+
+networks:
+  aorta:
+    driver: bridge
+
+volumes:
+  redis_data:

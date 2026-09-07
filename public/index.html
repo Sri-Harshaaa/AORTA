@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AORTA — To-Do List</title>
+
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+    <main class="app">
+
+        <header class="header">
+
+            <div class="brand">
+
+                <div class="brand-mark">
+                    A
+                </div>
+
+                <div>
+                    <div class="brand-name">
+                        AORTA
+                    </div>
+
+                    <div class="brand-subtitle">
+                        TASK MANAGER
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="server-status">
+                <span class="status-dot"></span>
+                SERVER ONLINE
+            </div>
+
+        </header>
+
+
+        <section class="hero">
+
+            <div class="hero-label">
+                TO-DO LIST
+            </div>
+
+            <h1>
+                Your tasks.<br>
+                <span>All in one place.</span>
+            </h1>
+
+            <p>
+                Create, manage, and track your tasks with a simple
+                to-do list powered by AORTA.
+            </p>
+
+        </section>
+
+
+        <section class="tasks-section">
+
+            <div class="section-header">
+
+                <div>
+                    <h2>
+                        Tasks
+                    </h2>
+
+                    <div id="task-count">
+                        0 tasks
+                    </div>
+                </div>
+
+            </div>
+
+
+            <form id="task-form" class="task-form">
+
+                <input
+                    id="task-input"
+                    type="text"
+                    placeholder="What do you need to do?"
+                    autocomplete="off"
+                    maxlength="500"
+                >
+
+                <button
+                    type="submit"
+                    class="add-button"
+                >
+                    <span>+</span>
+                    Add Task
+                </button>
+
+            </form>
+
+
+            <div
+                id="task-list"
+                class="task-list"
+            ></div>
+
+
+            <div
+                id="empty-state"
+                class="empty-state"
+            >
+
+                <div class="empty-icon">
+                    ✓
+                </div>
+
+                <h3>
+                    No tasks yet
+                </h3>
+
+                <p>
+                    Add your first task above.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <footer class="footer">
+
+            <div>
+                AORTA
+            </div>
+
+            <div>
+                TCP · EPOLL · HTTP/1.1
+            </div>
+
+        </footer>
+
+    </main>
+
+
+    <script src="/app.js"></script>
+
+</body>
+</html>
