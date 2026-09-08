@@ -1,8 +1,9 @@
 #pragma once
 
 #include "server/Reactor.hpp"
-#include "task/TaskManager.hpp"
+#include "worker/WorkerPool.hpp"
 
+#include <cstddef>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -10,10 +11,10 @@
 class Server {
 
 private:
-    int reactor_count;
-    int port;
+    int reactor_count{1};
+    int port{8080};
 
-    std::shared_ptr<TaskManager> task_manager;
+    std::unique_ptr<WorkerPool> worker_pool;
 
     std::vector<std::unique_ptr<Reactor>> reactors;
     std::vector<std::thread> threads;

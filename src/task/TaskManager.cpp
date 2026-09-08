@@ -1,9 +1,14 @@
 #include "task/TaskManager.hpp"
 
 #include <algorithm>
+#include <memory>
 
-TaskManager::TaskManager()
-    : redis("redis", 6379) {
+TaskManager::TaskManager(
+    WorkerPool& worker_pool,
+    std::size_t reactor_id
+)
+    : worker_pool(worker_pool),
+      reactor_id(reactor_id) {
 }
 
 
@@ -14,87 +19,126 @@ std::string TaskManager::taskKey(
 }
 
 
-std::vector<Task> TaskManager::getAll() {
-
-    std::vector<std::string> ids;
-
-    if(!redis.smembers(
-        TASK_SET_KEY,
-        ids
-    )) {
-        return {};
+bool TaskManager::getAll(
+    GetAllCallback callback
+) {
+    if(!callback) {
+        return false;
     }
 
-    std::vector<Task> tasks;
+    auto result =
+        std::make_shared<std::vector<Task>>();
 
-    tasks.reserve(ids.size());
+    auto success =
+        std::make_shared<bool>(false);
 
-    for(const std::string& id_string : ids) {
+    return worker_pool.submit(
+        reactor_id,
+        [callback = std::move(callback), result, success](RedisClient& redis) mutable {
+            bool operation_success = true;
 
-        std::size_t id{0};
+            std::vector<std::string> ids;
 
-        try {
-            id = std::stoull(id_string);
-        } catch(...) {
-            continue;
-        }
+            if(!redis.smembers(
+                TASK_SET_KEY,
+                ids
+            )) {
+                operation_success = false;
+            } else {
+                result->reserve(ids.size());
 
-        std::string title;
-        bool completed{false};
+                for(const std::string& id_string : ids) {
+                    std::size_t id{0};
 
-        if(!redis.hgetall(
-            taskKey(id),
-            title,
-            completed
-        )) {
-            continue;
-        }
+                    try {
+                        id = std::stoull(id_string);
+                    } catch(...) {
+                        continue;
+                    }
 
-        tasks.push_back({
-            id,
-            title,
-            completed
-        });
-    }
+                    std::string title;
+                    bool completed{false};
 
-    std::sort(
-        tasks.begin(),
-        tasks.end(),
-        [](const Task& first, const Task& second) {
-            return first.id < second.id;
+                    if(!redis.hgetall(
+                        taskKey(id),
+                        title,
+                        completed
+                    )) {
+                        continue;
+                    }
+
+                    result->push_back({
+                        id,
+                        title,
+                        completed
+                    });
+                }
+
+                std::sort(
+                    result->begin(),
+                    result->end(),
+                    [](const Task& first, const Task& second) {
+                        return first.id < second.id;
+                    }
+                );
+            }
+
+            *success = operation_success;
+
+            return [callback = std::move(callback), result, success]() mutable {
+                callback(
+                    *success,
+                    *result
+                );
+            };
         }
     );
-
-    return tasks;
 }
 
 
 bool TaskManager::create(
     const std::string& title,
-    Task& created_task
+    CreateCallback callback
 ) {
-    if(title.empty()) {
+    if(!callback || title.empty()) {
         return false;
     }
 
-    std::size_t id{0};
+    auto result =
+        std::make_shared<Task>();
 
-    if(!redis.createTask(
-        NEXT_ID_KEY,
-        TASK_SET_KEY,
-        title,
-        id
-    )) {
-        return false;
-    }
+    auto success =
+        std::make_shared<bool>(false);
 
-    created_task = {
-        id,
-        title,
-        false
-    };
+    return worker_pool.submit(
+        reactor_id,
+        [title, callback = std::move(callback), result, success](RedisClient& redis) mutable {
+            std::size_t id{0};
 
-    return true;
+            *success =
+                redis.createTask(
+                    NEXT_ID_KEY,
+                    TASK_SET_KEY,
+                    title,
+                    id
+                );
+
+            if(*success) {
+                *result = {
+                    id,
+                    title,
+                    false
+                };
+            }
+
+            return [callback = std::move(callback), result, success]() mutable {
+                callback(
+                    *success,
+                    *result
+                );
+            };
+        }
+    );
 }
 
 
@@ -102,42 +146,81 @@ bool TaskManager::update(
     std::size_t id,
     const std::string& title,
     bool completed,
-    Task& updated_task
+    UpdateCallback callback
 ) {
-    std::string updated_title;
-
-    if(!redis.updateTask(
-        taskKey(id),
-        title,
-        completed,
-        updated_title
-    )) {
+    if(!callback) {
         return false;
     }
 
-    updated_task = {
-        id,
-        updated_title,
-        completed
-    };
+    auto result =
+        std::make_shared<Task>();
 
-    return true;
+    auto success =
+        std::make_shared<bool>(false);
+
+    return worker_pool.submit(
+        reactor_id,
+        [id, title, completed, callback = std::move(callback), result, success](RedisClient& redis) mutable {
+            std::string updated_title;
+
+            *success =
+                redis.updateTask(
+                    taskKey(id),
+                    title,
+                    completed,
+                    updated_title
+                );
+
+            if(*success) {
+                *result = {
+                    id,
+                    updated_title,
+                    completed
+                };
+            }
+
+            return [callback = std::move(callback), result, success]() mutable {
+                callback(
+                    *success,
+                    *result
+                );
+            };
+        }
+    );
 }
 
 
 bool TaskManager::remove(
-    std::size_t id
+    std::size_t id,
+    RemoveCallback callback
 ) {
-    bool removed{false};
-
-    if(!redis.removeTask(
-        taskKey(id),
-        TASK_SET_KEY,
-        std::to_string(id),
-        removed
-    )) {
+    if(!callback) {
         return false;
     }
 
-    return removed;
+    auto removed =
+        std::make_shared<bool>(false);
+
+    auto success =
+        std::make_shared<bool>(false);
+
+    return worker_pool.submit(
+        reactor_id,
+        [id, callback = std::move(callback), removed, success](RedisClient& redis) mutable {
+            *success =
+                redis.removeTask(
+                    taskKey(id),
+                    TASK_SET_KEY,
+                    std::to_string(id),
+                    *removed
+                );
+
+            return [callback = std::move(callback), removed, success]() mutable {
+                callback(
+                    *success,
+                    *removed
+                );
+            };
+        }
+    );
 }

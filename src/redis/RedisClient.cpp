@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include <sys/time.h>
+
 RedisClient::RedisClient(
     const std::string& redis_host,
     int redis_port
@@ -12,7 +14,6 @@ RedisClient::RedisClient(
 
 
 RedisClient::~RedisClient() {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(context != nullptr) {
         redisFree(context);
@@ -26,9 +27,15 @@ bool RedisClient::connect() {
         return true;
     }
 
-    context = redisConnect(
+    const struct timeval connect_timeout = {
+        0,
+        500000
+    };
+
+    context = redisConnectWithTimeout(
         host.c_str(),
-        port
+        port,
+        connect_timeout
     );
 
     if(context == nullptr) {
@@ -36,6 +43,17 @@ bool RedisClient::connect() {
     }
 
     if(context->err != 0) {
+        redisFree(context);
+        context = nullptr;
+        return false;
+    }
+
+    const struct timeval command_timeout = {
+        1,
+        0
+    };
+
+    if(redisSetTimeout(context, command_timeout) != REDIS_OK) {
         redisFree(context);
         context = nullptr;
         return false;
@@ -66,7 +84,6 @@ bool RedisClient::set(
     const std::string& key,
     const std::string& value
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -105,7 +122,6 @@ bool RedisClient::get(
     const std::string& key,
     std::string& value
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -144,7 +160,6 @@ bool RedisClient::get(
 bool RedisClient::exists(
     const std::string& key
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -177,7 +192,6 @@ bool RedisClient::exists(
 bool RedisClient::del(
     const std::string& key
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -210,7 +224,6 @@ bool RedisClient::incr(
     const std::string& key,
     std::size_t& value
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -251,7 +264,6 @@ bool RedisClient::hset(
     const std::string& field,
     const std::string& value
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -289,7 +301,6 @@ bool RedisClient::hgetall(
     std::string& title,
     bool& completed
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -375,7 +386,6 @@ bool RedisClient::sadd(
     const std::string& key,
     const std::string& value
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -410,7 +420,6 @@ bool RedisClient::srem(
     const std::string& key,
     const std::string& value
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -445,7 +454,6 @@ bool RedisClient::smembers(
     const std::string& key,
     std::vector<std::string>& values
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -503,7 +511,6 @@ bool RedisClient::createTask(
     const std::string& title,
     std::size_t& id
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -573,7 +580,6 @@ bool RedisClient::updateTask(
     bool completed,
     std::string& updated_title
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;
@@ -674,7 +680,6 @@ bool RedisClient::removeTask(
     const std::string& id,
     bool& removed
 ) {
-    std::lock_guard<std::mutex> lock(mutex);
 
     if(!ensureConnected()) {
         return false;

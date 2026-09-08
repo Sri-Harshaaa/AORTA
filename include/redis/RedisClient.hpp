@@ -3,7 +3,6 @@
 #include <hiredis/hiredis.h>
 
 #include <cstddef>
-#include <mutex>
 #include <string>
 #include <vector>
 
@@ -14,8 +13,6 @@ private:
     int port{6379};
 
     redisContext* context{nullptr};
-
-    std::mutex mutex;
 
     bool connect();
 
