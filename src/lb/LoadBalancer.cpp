@@ -248,6 +248,16 @@ void LoadBalancer::start() {
 
             if(event_flags & EPOLLERR) {
 
+                if(is_backend_fd && connection.backend_connecting) {
+
+                    failoverConnection(
+                        connection.client_fd,
+                        connection.backend_index
+                    );
+
+                    continue;
+                }
+
                 closeConnection(
                     connection.client_fd
                 );
@@ -256,6 +266,16 @@ void LoadBalancer::start() {
             }
 
             if(event_flags & EPOLLHUP) {
+
+                if(is_backend_fd && connection.backend_connecting) {
+
+                    failoverConnection(
+                        connection.client_fd,
+                        connection.backend_index
+                    );
+
+                    continue;
+                }
 
                 closeConnection(
                     connection.client_fd
@@ -543,8 +563,15 @@ void LoadBalancer::start() {
                     socket_error != 0
                 ) {
 
-                    closeConnection(
-                        updated.client_fd
+                    const int failed_client_fd =
+                        updated.client_fd;
+
+                    const std::size_t failed_backend_index =
+                        updated.backend_index;
+
+                    failoverConnection(
+                        failed_client_fd,
+                        failed_backend_index
                     );
 
                     continue;
@@ -1526,6 +1553,154 @@ void LoadBalancer::closeConnection(
     connections.erase(
         connection_it
     );
+}
+
+bool LoadBalancer::failoverConnection(
+    int client_fd,
+    std::size_t failed_backend_index
+) {
+    auto connection_it =
+        connections.find(client_fd);
+
+    if(
+        connection_it ==
+        connections.end()
+    ) {
+        return false;
+    }
+
+    ConnectionPair& connection =
+        connection_it->second;
+
+    const int old_backend_fd =
+        connection.backend_fd;
+
+    if(old_backend_fd != -1) {
+
+        epoll.remove(old_backend_fd);
+
+        backend_to_client.erase(old_backend_fd);
+
+        if(
+            failed_backend_index <
+            backend_pool.size()
+        ) {
+
+            Backend& failed_backend =
+                backend_pool.getBackend(
+                    failed_backend_index
+                );
+
+            if(failed_backend.connection_count > 0) {
+                failed_backend.connection_count--;
+            }
+
+            failed_backend.failed_connections++;
+        }
+
+        close(old_backend_fd);
+
+        connection.backend_fd = -1;
+        connection.backend_connecting = false;
+        connection.current_backend_events = 0;
+    }
+
+    const std::size_t backend_count =
+        backend_pool.size();
+
+    if(backend_count == 0) {
+        closeConnection(client_fd);
+        return false;
+    }
+
+    const std::size_t start_index =
+        (failed_backend_index + 1) % backend_count;
+
+    for(
+        std::size_t attempt = 0;
+        attempt < backend_count;
+        ++attempt
+    ) {
+
+        const std::size_t index =
+            (start_index + attempt) % backend_count;
+
+        if(index == failed_backend_index) {
+            continue;
+        }
+
+        Backend& backend =
+            backend_pool.getBackend(index);
+
+        if(!backend.healthy) {
+            continue;
+        }
+
+        bool connecting = false;
+
+        const int backend_fd =
+            connectToBackend(
+                backend,
+                connecting
+            );
+
+        if(backend_fd == -1) {
+            backend.failed_connections++;
+            continue;
+        }
+
+        connection.backend_fd =
+            backend_fd;
+
+        connection.backend_index =
+            index;
+
+        connection.backend_connecting =
+            connecting;
+
+        backend.connection_count++;
+        backend.total_connections++;
+
+        uint32_t backend_events =
+            EPOLLRDHUP |
+            EPOLLERR |
+            EPOLLHUP;
+
+        if(connecting) {
+            backend_events |= EPOLLOUT;
+        } else {
+            backend_events |= EPOLLIN;
+        }
+
+        if(!epoll.add(
+            backend_fd,
+            backend_events
+        )) {
+
+            if(backend.connection_count > 0) {
+                backend.connection_count--;
+            }
+
+            close(backend_fd);
+
+            connection.backend_fd = -1;
+            connection.backend_connecting = false;
+            connection.current_backend_events = 0;
+
+            continue;
+        }
+
+        connection.current_backend_events =
+            backend_events;
+
+        backend_to_client[backend_fd] =
+            client_fd;
+
+        return true;
+    }
+
+    closeConnection(client_fd);
+    return false;
 }
 
 void LoadBalancer::closeAllConnections() {

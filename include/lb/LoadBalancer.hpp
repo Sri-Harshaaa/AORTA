@@ -127,6 +127,11 @@ private:
         int client_fd
     );
 
+    bool failoverConnection(
+        int client_fd,
+        std::size_t failed_backend_index
+    );
+
     void closeAllConnections();
 
     bool connectClientToBackend(
