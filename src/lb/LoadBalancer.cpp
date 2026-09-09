@@ -5,9 +5,11 @@
 #include <cerrno>
 #include <csignal>
 #include <cstring>
+#include <cstdlib>
 #include <iostream>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -23,7 +25,35 @@ void LoadBalancer::handleSignal(int signal) {
     }
 }
 
-LoadBalancer::LoadBalancer() {
+LoadBalancer::RoutingMode LoadBalancer::loadRoutingMode() {
+    const char* environment =
+        std::getenv("AORTA_LB_ROUTING");
+
+    if(environment == nullptr) {
+        return RoutingMode::RoundRobin;
+    }
+
+    const std::string mode(environment);
+
+    if(
+        mode == "consistent_hash" ||
+        mode == "consistent-hash" ||
+        mode == "hash"
+    ) {
+        return RoutingMode::ConsistentHash;
+    }
+
+    return RoutingMode::RoundRobin;
+}
+
+LoadBalancer::LoadBalancer(
+    int reactor_id,
+    int reactor_count
+)
+    : reactor_id(reactor_id),
+      reactor_count(reactor_count),
+      routing_mode(loadRoutingMode()) {
+
     const std::vector<Backend> configured_backends =
         BackendConfig::load("config/backends.conf");
 
@@ -34,13 +64,30 @@ LoadBalancer::LoadBalancer() {
     consistent_hash.build(backend_pool);
 
     std::cout
-        << "Loaded "
+        << "LB Reactor "
+        << reactor_id
+        << "/"
+        << reactor_count
+        << " loaded "
         << backend_pool.size()
         << " backends"
         << std::endl;
 
     std::cout
-        << "Consistent hash ring contains "
+        << "LB Reactor "
+        << reactor_id
+        << " routing mode: "
+        << (
+            routing_mode == RoutingMode::RoundRobin
+            ? "round_robin"
+            : "consistent_hash"
+        )
+        << std::endl;
+
+    std::cout
+        << "LB Reactor "
+        << reactor_id
+        << " consistent hash ring contains "
         << consistent_hash.size()
         << " virtual nodes"
         << std::endl;
@@ -52,7 +99,9 @@ void LoadBalancer::start() {
 
     if(!listen_socket.bindAndListen(LISTEN_PORT)) {
         std::cerr
-            << "Load Balancer listen failed"
+            << "Load Balancer Reactor "
+            << reactor_id
+            << " listen failed"
             << std::endl;
         return;
     }
@@ -62,7 +111,9 @@ void LoadBalancer::start() {
         EPOLLIN
     )) {
         std::cerr
-            << "Failed to add listen socket to epoll"
+            << "LB Reactor "
+            << reactor_id
+            << " failed to add listen socket"
             << std::endl;
         return;
     }
@@ -71,7 +122,9 @@ void LoadBalancer::start() {
         HEALTH_CHECK_INTERVAL
     )) {
         std::cerr
-            << "Failed to start health timer"
+            << "LB Reactor "
+            << reactor_id
+            << " failed to start health timer"
             << std::endl;
         return;
     }
@@ -81,13 +134,17 @@ void LoadBalancer::start() {
         EPOLLIN
     )) {
         std::cerr
-            << "Failed to add health timer to epoll"
+            << "LB Reactor "
+            << reactor_id
+            << " failed to add health timer"
             << std::endl;
         return;
     }
 
     std::cout
-        << "Load Balancer listening on port "
+        << "LB Reactor "
+        << reactor_id
+        << " listening on port "
         << LISTEN_PORT
         << std::endl;
 
@@ -123,7 +180,9 @@ void LoadBalancer::start() {
             }
 
             std::cerr
-                << "epoll_wait() failed"
+                << "LB Reactor "
+                << reactor_id
+                << " epoll_wait() failed"
                 << std::endl;
 
             break;
@@ -210,8 +269,7 @@ void LoadBalancer::start() {
                 !is_backend_fd
             ) {
 
-                connection.client_read_closed =
-                    true;
+                connection.client_read_closed = true;
 
                 if(connection.backend_fd != -1) {
                     shutdown(
@@ -276,14 +334,6 @@ void LoadBalancer::start() {
                             constexpr std::size_t METRICS_PREFIX_SIZE =
                                 sizeof(METRICS_PREFIX) - 1;
 
-                            /*
-                             * The request can arrive fragmented.
-                             *
-                             * If the bytes received so far are a prefix
-                             * of "GET /metrics ", wait for more data
-                             * instead of sending the partial request to
-                             * a backend.
-                             */
                             if(
                                 static_cast<std::size_t>(peeked) <
                                 METRICS_PREFIX_SIZE &&
@@ -382,9 +432,7 @@ void LoadBalancer::start() {
                                 "Content-Type: text/plain; "
                                 "charset=utf-8\r\n"
                                 "Content-Length: " +
-                                std::to_string(
-                                    body.size()
-                                ) +
+                                std::to_string(body.size()) +
                                 "\r\n"
                                 "Connection: close\r\n"
                                 "\r\n" +
@@ -396,13 +444,24 @@ void LoadBalancer::start() {
                             current.client_read_closed =
                                 true;
 
-                            epoll.modify(
-                                current.client_fd,
+                            const uint32_t client_events =
                                 EPOLLOUT |
                                 EPOLLERR |
                                 EPOLLHUP |
-                                EPOLLRDHUP
-                            );
+                                EPOLLRDHUP;
+
+                            if(
+                                client_events !=
+                                current.current_client_events
+                            ) {
+                                if(epoll.modify(
+                                    current.client_fd,
+                                    client_events
+                                )) {
+                                    current.current_client_events =
+                                        client_events;
+                                }
+                            }
 
                         } else {
 
@@ -567,8 +626,7 @@ void LoadBalancer::start() {
 
                 after_io.client_to_backend.clear();
 
-                after_io.client_to_backend_offset =
-                    0;
+                after_io.client_to_backend_offset = 0;
             }
 
             if(
@@ -578,8 +636,7 @@ void LoadBalancer::start() {
 
                 after_io.backend_to_client.clear();
 
-                after_io.backend_to_client_offset =
-                    0;
+                after_io.backend_to_client_offset = 0;
             }
 
             if(
@@ -615,9 +672,7 @@ void LoadBalancer::start() {
                     EPOLLERR |
                     EPOLLHUP;
 
-                if(
-                    !after_io.backend_read_closed
-                ) {
+                if(!after_io.backend_read_closed) {
                     backend_events |= EPOLLIN;
                 }
 
@@ -629,10 +684,18 @@ void LoadBalancer::start() {
                     backend_events |= EPOLLOUT;
                 }
 
-                epoll.modify(
-                    after_io.backend_fd,
-                    backend_events
-                );
+                if(
+                    backend_events !=
+                    after_io.current_backend_events
+                ) {
+                    if(epoll.modify(
+                        after_io.backend_fd,
+                        backend_events
+                    )) {
+                        after_io.current_backend_events =
+                            backend_events;
+                    }
+                }
             }
 
             uint32_t client_events =
@@ -640,9 +703,7 @@ void LoadBalancer::start() {
                 EPOLLERR |
                 EPOLLHUP;
 
-            if(
-                !after_io.client_read_closed
-            ) {
+            if(!after_io.client_read_closed) {
                 client_events |= EPOLLIN;
             }
 
@@ -653,10 +714,18 @@ void LoadBalancer::start() {
                 client_events |= EPOLLOUT;
             }
 
-            epoll.modify(
-                after_io.client_fd,
-                client_events
-            );
+            if(
+                client_events !=
+                after_io.current_client_events
+            ) {
+                if(epoll.modify(
+                    after_io.client_fd,
+                    client_events
+                )) {
+                    after_io.current_client_events =
+                        client_events;
+                }
+            }
         }
     }
 
@@ -665,7 +734,9 @@ void LoadBalancer::start() {
     health_checker.cancelAll(epoll);
 
     std::cout
-        << "Load Balancer stopped"
+        << "LB Reactor "
+        << reactor_id
+        << " stopped"
         << std::endl;
 }
 
@@ -699,7 +770,9 @@ void LoadBalancer::handleAccept() {
             }
 
             std::cerr
-                << "accept4() failed: "
+                << "LB Reactor "
+                << reactor_id
+                << " accept4() failed: "
                 << std::strerror(errno)
                 << std::endl;
 
@@ -716,6 +789,15 @@ void LoadBalancer::handleAccept() {
         ConnectionPair connection;
 
         connection.client_fd = client_fd;
+
+        uint32_t client_events =
+            EPOLLIN |
+            EPOLLRDHUP |
+            EPOLLERR |
+            EPOLLHUP;
+
+        connection.current_client_events =
+            client_events;
 
         char client_ip[INET_ADDRSTRLEN]{};
 
@@ -735,24 +817,9 @@ void LoadBalancer::handleAccept() {
             std::move(connection)
         );
 
-        /*
-         * Do not inspect the HTTP request immediately after accept().
-         *
-         * accept() only tells us that the TCP connection exists. The
-         * client's HTTP bytes may arrive later, so MSG_PEEK here can
-         * return EAGAIN and cause a real /metrics request to be treated
-         * as a backend request.
-         *
-         * The request is classified when EPOLLIN fires below, after
-         * actual client data is available.
-         */
-
         if(!epoll.add(
             client_fd,
-            EPOLLIN |
-            EPOLLRDHUP |
-            EPOLLERR |
-            EPOLLHUP
+            client_events
         )) {
 
             connections.erase(client_fd);
@@ -760,6 +827,58 @@ void LoadBalancer::handleAccept() {
             continue;
         }
     }
+}
+
+std::size_t LoadBalancer::selectRoundRobinBackend() {
+    const std::size_t count =
+        backend_pool.size();
+
+    if(count == 0) {
+        return 0;
+    }
+
+    for(std::size_t attempt = 0; attempt < count; ++attempt) {
+
+        const std::size_t index =
+            next_backend_index % count;
+
+        next_backend_index =
+            (next_backend_index + 1) % count;
+
+        const Backend& backend =
+            backend_pool.getBackend(index);
+
+        if(backend.healthy) {
+            return index;
+        }
+    }
+
+    return count;
+}
+
+std::optional<std::size_t> LoadBalancer::selectBackend(
+    const std::string& client_ip
+) {
+    if(!backend_pool.hasHealthyBackend()) {
+        return std::nullopt;
+    }
+
+    if(routing_mode == RoutingMode::RoundRobin) {
+
+        const std::size_t index =
+            selectRoundRobinBackend();
+
+        if(index >= backend_pool.size()) {
+            return std::nullopt;
+        }
+
+        return index;
+    }
+
+    return consistent_hash.getBackend(
+        client_ip,
+        backend_pool
+    );
 }
 
 bool LoadBalancer::connectClientToBackend(
@@ -782,78 +901,148 @@ bool LoadBalancer::connectClientToBackend(
     ConnectionPair& connection =
         connection_it->second;
 
-    const auto backend_result =
-        consistent_hash.getBackend(
-            connection.client_ip,
-            backend_pool
-        );
+    std::optional<std::size_t> initial_backend =
+        selectBackend(connection.client_ip);
 
-    if(!backend_result.has_value()) {
+    if(!initial_backend.has_value()) {
         return false;
     }
 
-    const std::size_t index =
-        backend_result.value();
+    const std::size_t backend_count =
+        backend_pool.size();
 
-    Backend& backend =
-        backend_pool.getBackend(index);
+    std::vector<bool> attempted(
+        backend_count,
+        false
+    );
 
-    bool connecting = false;
+    for(std::size_t attempt = 0; attempt < backend_count; ++attempt) {
 
-    int backend_fd =
-        connectToBackend(
-            backend,
-            connecting
-        );
+        std::size_t index;
 
-    if(backend_fd == -1) {
-        backend.failed_connections++;
-        return false;
-    }
+        if(
+            attempt == 0 ||
+            routing_mode == RoutingMode::RoundRobin
+        ) {
+            if(attempt == 0) {
+                index =
+                    initial_backend.value();
+            } else {
 
-    connection.backend_fd =
-        backend_fd;
+                const std::size_t next =
+                    selectRoundRobinBackend();
 
-    connection.backend_index =
-        index;
+                if(next >= backend_count) {
+                    break;
+                }
 
-    connection.backend_connecting =
-        connecting;
+                index = next;
+            }
 
-    backend.connection_count++;
-    backend.total_connections++;
+        } else {
 
-    uint32_t backend_events =
-        EPOLLRDHUP |
-        EPOLLERR |
-        EPOLLHUP;
+            index = initial_backend.value();
 
-    if(connecting) {
-        backend_events |= EPOLLOUT;
-    } else {
-        backend_events |= EPOLLIN;
-    }
+            bool found_alternate = false;
 
-    if(!epoll.add(
-        backend_fd,
-        backend_events
-    )) {
+            for(std::size_t candidate = 0;
+                candidate < backend_count;
+                ++candidate) {
 
-        if(backend.connection_count > 0) {
-            backend.connection_count--;
+                if(
+                    !attempted[candidate] &&
+                    backend_pool.getBackend(candidate).healthy
+                ) {
+                    index = candidate;
+                    found_alternate = true;
+                    break;
+                }
+            }
+
+            if(!found_alternate) {
+                break;
+            }
         }
 
-        close(backend_fd);
+        if(index >= backend_count) {
+            continue;
+        }
 
-        connection.backend_fd = -1;
+        if(attempted[index]) {
+            continue;
+        }
 
-        return false;
+        attempted[index] = true;
+
+        Backend& backend =
+            backend_pool.getBackend(index);
+
+        if(!backend.healthy) {
+            continue;
+        }
+
+        bool connecting = false;
+
+        int backend_fd =
+            connectToBackend(
+                backend,
+                connecting
+            );
+
+        if(backend_fd == -1) {
+            backend.failed_connections++;
+            continue;
+        }
+
+        connection.backend_fd =
+            backend_fd;
+
+        connection.backend_index =
+            index;
+
+        connection.backend_connecting =
+            connecting;
+
+        backend.connection_count++;
+        backend.total_connections++;
+
+        uint32_t backend_events =
+            EPOLLRDHUP |
+            EPOLLERR |
+            EPOLLHUP;
+
+        if(connecting) {
+            backend_events |= EPOLLOUT;
+        } else {
+            backend_events |= EPOLLIN;
+        }
+
+        if(!epoll.add(
+            backend_fd,
+            backend_events
+        )) {
+
+            if(backend.connection_count > 0) {
+                backend.connection_count--;
+            }
+
+            close(backend_fd);
+
+            connection.backend_fd = -1;
+
+            continue;
+        }
+
+        connection.current_backend_events =
+            backend_events;
+
+        backend_to_client[backend_fd] =
+            client_fd;
+
+        return true;
     }
 
-    backend_to_client[backend_fd] =
-        client_fd;
-
-    return true;
+    return false;
 }
 
 int LoadBalancer::connectToBackend(
@@ -952,62 +1141,24 @@ void LoadBalancer::forwardData(
 ) {
     char buffer[64 * 1024];
 
-    while(true) {
+    const std::size_t pending_bytes =
+        output_buffer.size() - offset;
 
-        const std::size_t pending_bytes =
-            output_buffer.size() - offset;
+    const ssize_t bytes_read =
+        recv(
+            source_fd,
+            buffer,
+            sizeof(buffer),
+            0
+        );
 
-        const ssize_t bytes_read =
-            recv(
-                source_fd,
-                buffer,
-                sizeof(buffer),
-                0
-            );
+    if(bytes_read > 0) {
 
-        if(bytes_read > 0) {
-
-            if(
-                pending_bytes +
-                static_cast<std::size_t>(bytes_read)
-                > MAX_BUFFER_SIZE
-            ) {
-
-                auto backend_it =
-                    backend_to_client.find(source_fd);
-
-                if(
-                    backend_it !=
-                    backend_to_client.end()
-                ) {
-
-                    closeConnection(
-                        backend_it->second
-                    );
-
-                } else {
-
-                    closeConnection(source_fd);
-                }
-
-                return;
-            }
-
-            if(offset == output_buffer.size()) {
-
-                output_buffer.clear();
-                offset = 0;
-            }
-
-            output_buffer.append(
-                buffer,
-                static_cast<std::size_t>(bytes_read)
-            );
-
-            continue;
-        }
-
-        if(bytes_read == 0) {
+        if(
+            pending_bytes +
+            static_cast<std::size_t>(bytes_read)
+            > MAX_BUFFER_SIZE
+        ) {
 
             auto backend_it =
                 backend_to_client.find(source_fd);
@@ -1017,48 +1168,33 @@ void LoadBalancer::forwardData(
                 backend_to_client.end()
             ) {
 
-                auto connection_it =
-                    connections.find(
-                        backend_it->second
-                    );
-
-                if(
-                    connection_it !=
-                    connections.end()
-                ) {
-
-                    connection_it->second
-                        .backend_read_closed = true;
-                }
+                closeConnection(
+                    backend_it->second
+                );
 
             } else {
 
-                auto connection_it =
-                    connections.find(source_fd);
-
-                if(
-                    connection_it !=
-                    connections.end()
-                ) {
-
-                    connection_it->second
-                        .client_read_closed = true;
-                }
+                closeConnection(source_fd);
             }
 
             return;
         }
 
-        if(errno == EINTR) {
-            continue;
+        if(offset == output_buffer.size()) {
+
+            output_buffer.clear();
+            offset = 0;
         }
 
-        if(
-            errno == EAGAIN ||
-            errno == EWOULDBLOCK
-        ) {
-            return;
-        }
+        output_buffer.append(
+            buffer,
+            static_cast<std::size_t>(bytes_read)
+        );
+
+        return;
+    }
+
+    if(bytes_read == 0) {
 
         auto backend_it =
             backend_to_client.find(source_fd);
@@ -1078,18 +1214,68 @@ void LoadBalancer::forwardData(
                 connections.end()
             ) {
 
-                closeConnection(
-                    connection_it->second.client_fd
-                );
+                connection_it->second.backend_read_closed =
+                    true;
             }
 
         } else {
 
-            closeConnection(source_fd);
+            auto connection_it =
+                connections.find(source_fd);
+
+            if(
+                connection_it !=
+                connections.end()
+            ) {
+
+                connection_it->second.client_read_closed =
+                    true;
+            }
         }
 
         return;
     }
+
+    if(errno == EINTR) {
+        return;
+    }
+
+    if(
+        errno == EAGAIN ||
+        errno == EWOULDBLOCK
+    ) {
+        return;
+    }
+
+    auto backend_it =
+        backend_to_client.find(source_fd);
+
+    if(
+        backend_it !=
+        backend_to_client.end()
+    ) {
+
+        auto connection_it =
+            connections.find(
+                backend_it->second
+            );
+
+        if(
+            connection_it !=
+            connections.end()
+        ) {
+
+            closeConnection(
+                connection_it->second.client_fd
+            );
+        }
+
+    } else {
+
+        closeConnection(source_fd);
+    }
+
+    return;
 }
 
 void LoadBalancer::flushData(
@@ -1199,10 +1385,18 @@ void LoadBalancer::updateWriteInterest(
             events |= EPOLLOUT;
         }
 
-        epoll.modify(
-            fd,
-            events
-        );
+        if(
+            events !=
+            connection.current_backend_events
+        ) {
+            if(epoll.modify(
+                fd,
+                events
+            )) {
+                connection.current_backend_events =
+                    events;
+            }
+        }
 
         return;
     }
@@ -1233,10 +1427,18 @@ void LoadBalancer::updateWriteInterest(
         events |= EPOLLOUT;
     }
 
-    epoll.modify(
-        fd,
-        events
-    );
+    if(
+        events !=
+        connection.current_client_events
+    ) {
+        if(epoll.modify(
+            fd,
+            events
+        )) {
+            connection.current_client_events =
+                events;
+        }
+    }
 }
 
 void LoadBalancer::handleHealthCheck() {

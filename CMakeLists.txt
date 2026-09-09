@@ -31,6 +31,7 @@ set(SERVER_SOURCES
     src/http/StaticFileHandler.cpp
     src/task/TaskManager.cpp
     src/redis/RedisClient.cpp
+    src/worker/WorkerPool.cpp
 )
 
 set(LB_SOURCES

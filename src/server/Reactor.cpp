@@ -1,12 +1,12 @@
 #include "server/Reactor.hpp"
 
-#include "http/HttpResponse.hpp"
-
+#include <cerrno>
 #include <csignal>
 #include <iostream>
-#include <cerrno>
+#include <utility>
 #include <vector>
 
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -14,19 +14,30 @@ extern volatile std::sig_atomic_t shutdown_requested;
 
 Reactor::Reactor(
     int id,
-    std::shared_ptr<TaskManager> task_manager
-) : id(id),
-    task_manager(task_manager),
-    http_handler(task_manager, metrics) {
+    WorkerPool& worker_pool,
+    Metrics& metrics
+)
+    : id(id),
+      worker_pool(worker_pool),
+      task_manager(worker_pool, static_cast<std::size_t>(id)),
+      metrics(metrics),
+      http_handler(&task_manager, metrics),
+      completion_fd(
+          worker_pool.getCompletionFd(
+              static_cast<std::size_t>(id)
+          )
+      ) {
 }
+
 
 void Reactor::handleAccept() {
     while(true) {
-        int client_fd = accept(
-            listen_socket.getFd(),
-            nullptr,
-            nullptr
-        );
+        const int client_fd =
+            accept(
+                listen_socket.getFd(),
+                nullptr,
+                nullptr
+            );
 
         if(client_fd == -1) {
             if(errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -50,59 +61,92 @@ void Reactor::handleAccept() {
             continue;
         }
 
-        if(!epoll.add(client_fd, EPOLLIN | EPOLLRDHUP)) {
+        if(!epoll.add(
+            client_fd,
+            EPOLLIN | EPOLLRDHUP
+        )) {
             close(client_fd);
             continue;
         }
 
-        connections[client_fd] = std::make_unique<Connection>(client_fd, id);
+        const std::uint64_t generation =
+            ++next_connection_generation;
+
+        connections[client_fd] =
+            std::make_unique<Connection>(
+                client_fd,
+                id
+            );
 
         metrics.incrementActiveConnections();
 
-        refreshDeadline(
-            client_fd,
-            REQUEST_TIMEOUT_SECONDS
-        );
+        connection_states[client_fd] = {
+            std::chrono::steady_clock::now()
+                + std::chrono::seconds(
+                    REQUEST_TIMEOUT_SECONDS
+                ),
+            std::chrono::steady_clock::time_point{},
+            generation,
+            false,
+            false
+        };
     }
 }
 
-void Reactor::removeConnection(int fd) {
+
+void Reactor::removeConnection(
+    int fd
+) {
+    auto iterator = connections.find(fd);
+
+    if(iterator == connections.end()) {
+        return;
+    }
+
     epoll.remove(fd);
-
-    connections.erase(fd);
+    connections.erase(iterator);
     connection_states.erase(fd);
-
     metrics.decrementActiveConnections();
 }
 
-void Reactor::updateEvents(int fd, uint32_t events) {
-    struct epoll_event event;
 
-    event.events = events;
-    event.data.fd = fd;
+void Reactor::updateEvents(
+    int fd,
+    uint32_t events
+) {
+    if(connections.find(fd) == connections.end()) {
+        return;
+    }
 
-    if(epoll_ctl(
-        epoll.getFd(),
-        EPOLL_CTL_MOD,
-        fd,
-        &event
-    ) == -1) {
+    if(!epoll.modify(fd, events)) {
+        metrics.incrementErrors();
         removeConnection(fd);
     }
 }
 
-void Reactor::refreshDeadline(int fd, int timeout_seconds) {
-    ConnectionState state;
 
-    state.deadline = std::chrono::steady_clock::now() + std::chrono::seconds(timeout_seconds);
+void Reactor::refreshDeadline(
+    int fd,
+    int timeout_seconds
+) {
+    auto iterator = connection_states.find(fd);
 
-    connection_states[fd] = state;
+    if(iterator == connection_states.end()) {
+        return;
+    }
+
+    iterator->second.deadline =
+        std::chrono::steady_clock::now()
+        + std::chrono::seconds(timeout_seconds);
 }
 
+
 void Reactor::removeExpiredConnections() {
-    auto now = std::chrono::steady_clock::now();
+    const auto now =
+        std::chrono::steady_clock::now();
 
     std::vector<int> expired_fds;
+    expired_fds.reserve(connection_states.size());
 
     for(const auto& entry : connection_states) {
         if(now >= entry.second.deadline) {
@@ -110,7 +154,7 @@ void Reactor::removeExpiredConnections() {
         }
     }
 
-    for(int fd : expired_fds) {
+    for(const int fd : expired_fds) {
         if(connections.find(fd) == connections.end()) {
             continue;
         }
@@ -119,23 +163,43 @@ void Reactor::removeExpiredConnections() {
     }
 }
 
+
 void Reactor::handleTimer() {
     timer.consume();
-
     removeExpiredConnections();
 }
 
-void Reactor::handleClient(int fd) {
-    auto it = connections.find(fd);
 
-    if(it == connections.end()) {
+void Reactor::handleClient(
+    int fd
+) {
+    auto iterator = connections.find(fd);
+
+    if(iterator == connections.end()) {
         return;
     }
 
-    Connection& connection = *(it->second);
+    auto state_iterator =
+        connection_states.find(fd);
+
+    if(state_iterator == connection_states.end()) {
+        removeConnection(fd);
+        return;
+    }
+
+    ConnectionState& state =
+        state_iterator->second;
+
+    if(state.redis_pending) {
+        return;
+    }
+
+    Connection& connection =
+        *iterator->second;
 
     while(true) {
-        Connection::ReadResult result = connection.read();
+        const Connection::ReadResult result =
+            connection.read();
 
         if(result == Connection::ReadResult::Disconnected) {
             removeConnection(fd);
@@ -166,7 +230,8 @@ void Reactor::handleClient(int fd) {
         }
 
         while(true) {
-            HttpParser::ParseResult parse_result = connection.parseRequest();
+            const HttpParser::ParseResult parse_result =
+                connection.parseRequest();
 
             if(parse_result == HttpParser::ParseResult::NeedMoreData) {
                 connection.consumeParsedBytes();
@@ -221,31 +286,95 @@ void Reactor::handleClient(int fd) {
                 return;
             }
 
-            const HttpRequest& request = connection.getRequest();
+            const HttpRequest request =
+                connection.getRequest();
+
+            state.request_start =
+                std::chrono::steady_clock::now();
+            state.request_in_flight = true;
 
             metrics.incrementRequests();
 
+            const bool close_after_write =
+                request.hasHeaderToken(
+                    "Connection",
+                    "close"
+                );
+
+            const std::uint64_t generation =
+                state.generation;
+
             HttpResponse response;
 
-            http_handler.handle(
-                request,
-                response
-            );
+            const HttpHandler::HandleResult result =
+                http_handler.handle(
+                    request,
+                    response,
+                    [this, fd, generation, close_after_write](HttpResponse completed_response) {
+                        completeAsyncResponse(
+                            fd,
+                            generation,
+                            close_after_write,
+                            std::move(completed_response)
+                        );
+                    }
+                );
 
-            if(request.hasHeaderToken("Connection", "close")) {
+            if(result == HttpHandler::HandleResult::Pending) {
+                connection.consumeParsedBytes();
+                connection.resetParser();
+
+                state.redis_pending = true;
+
+                refreshDeadline(
+                    fd,
+                    REQUEST_TIMEOUT_SECONDS
+                );
+
+                updateEvents(
+                    fd,
+                    EPOLLRDHUP
+                );
+
+                return;
+            }
+
+            if(state.request_in_flight) {
+                const auto latency =
+                    std::chrono::steady_clock::now() -
+                    state.request_start;
+
+                metrics.recordLatency(
+                    static_cast<std::uint64_t>(
+                        std::chrono::duration_cast<
+                            std::chrono::microseconds
+                        >(latency).count()
+                    )
+                );
+
+                state.request_in_flight = false;
+            }
+
+            if(close_after_write) {
                 connection.setCloseAfterWrite(true);
                 response.setConnection("close");
             }
 
-            std::string serialized_response = response.serialize();
-
-            if(!connection.queueResponse(serialized_response)) {
+            if(!connection.queueResponse(
+                response.serialize()
+            )) {
                 metrics.incrementErrors();
                 removeConnection(fd);
                 return;
             }
 
-            if(response.hasFile() && response.getFileSize() > 0 && response.getFileSize() <= 16 * 1024 * 1024) {
+            if(
+                response.hasFile()
+                &&
+                response.getFileSize() > 0
+                &&
+                response.getFileSize() <= 16 * 1024 * 1024
+            ) {
                 if(!connection.queueFile(
                     response.getFilePath(),
                     response.getFileSize()
@@ -286,16 +415,21 @@ void Reactor::handleClient(int fd) {
     }
 }
 
-void Reactor::handleWrite(int fd) {
-    auto it = connections.find(fd);
 
-    if(it == connections.end()) {
+void Reactor::handleWrite(
+    int fd
+) {
+    auto iterator = connections.find(fd);
+
+    if(iterator == connections.end()) {
         return;
     }
 
-    Connection& connection = *(it->second);
+    Connection& connection =
+        *iterator->second;
 
-    Connection::WriteResult result = connection.write();
+    const Connection::WriteResult result =
+        connection.write();
 
     if(result == Connection::WriteResult::Error) {
         metrics.incrementErrors();
@@ -307,13 +441,12 @@ void Reactor::handleWrite(int fd) {
         return;
     }
 
+    metrics.incrementResponses();
+
     if(connection.shouldCloseAfterWrite()) {
-        metrics.incrementResponses();
         removeConnection(fd);
         return;
     }
-
-    metrics.incrementResponses();
 
     updateEvents(
         fd,
@@ -321,9 +454,125 @@ void Reactor::handleWrite(int fd) {
     );
 }
 
-void Reactor::handleEvent(struct epoll_event& event) {
-    int fd = event.data.fd;
-    uint32_t events = event.events;
+
+void Reactor::handleCompletions() {
+    worker_pool.consumeCompletionEvent(
+        static_cast<std::size_t>(id)
+    );
+
+    while(true) {
+        WorkerPool::Completion completion;
+
+        if(!worker_pool.popCompletion(
+            static_cast<std::size_t>(id),
+            completion
+        )) {
+            break;
+        }
+
+        if(completion) {
+            completion();
+        }
+    }
+}
+
+
+void Reactor::completeAsyncResponse(
+    int fd,
+    std::uint64_t generation,
+    bool close_after_write,
+    HttpResponse response
+) {
+    auto connection_iterator =
+        connections.find(fd);
+
+    if(connection_iterator == connections.end()) {
+        return;
+    }
+
+    auto state_iterator =
+        connection_states.find(fd);
+
+    if(state_iterator == connection_states.end()) {
+        return;
+    }
+
+    ConnectionState& state =
+        state_iterator->second;
+
+    if(!isGenerationCurrent(state, generation)) {
+        return;
+    }
+
+    if(!state.redis_pending) {
+        return;
+    }
+
+    if(state.request_in_flight) {
+        const auto latency =
+            std::chrono::steady_clock::now() -
+            state.request_start;
+
+        metrics.recordLatency(
+            static_cast<std::uint64_t>(
+                std::chrono::duration_cast<
+                    std::chrono::microseconds
+                >(latency).count()
+            )
+        );
+
+        state.request_in_flight = false;
+    }
+
+    Connection& connection =
+        *connection_iterator->second;
+
+    state.redis_pending = false;
+
+    if(close_after_write) {
+        connection.setCloseAfterWrite(true);
+        response.setConnection("close");
+    }
+
+    if(response.hasFile()) {
+        metrics.incrementErrors();
+        removeConnection(fd);
+        return;
+    }
+
+    if(!connection.queueResponse(
+        response.serialize()
+    )) {
+        metrics.incrementErrors();
+        removeConnection(fd);
+        return;
+    }
+
+    refreshDeadline(
+        fd,
+        KEEP_ALIVE_TIMEOUT_SECONDS
+    );
+
+    updateEvents(
+        fd,
+        EPOLLIN | EPOLLOUT | EPOLLRDHUP
+    );
+}
+
+
+bool Reactor::isGenerationCurrent(
+    const ConnectionState& state,
+    std::uint64_t generation
+) {
+    return state.generation == generation;
+}
+
+
+void Reactor::handleEvent(
+    struct epoll_event& event
+) {
+    const int fd = event.data.fd;
+    const uint32_t events = event.events;
 
     if(fd == listen_socket.getFd()) {
         handleAccept();
@@ -332,6 +581,11 @@ void Reactor::handleEvent(struct epoll_event& event) {
 
     if(fd == timer.getFd()) {
         handleTimer();
+        return;
+    }
+
+    if(fd == completion_fd) {
+        handleCompletions();
         return;
     }
 
@@ -369,27 +623,67 @@ void Reactor::handleEvent(struct epoll_event& event) {
     }
 }
 
-void Reactor::run(int port) {
+
+void Reactor::run(
+    int port
+) {
     if(!listen_socket.bindAndListen(port)) {
         return;
     }
 
-    if(!epoll.add(listen_socket.getFd(), EPOLLIN)) {
+    if(!epoll.add(
+        listen_socket.getFd(),
+        EPOLLIN
+    )) {
         return;
     }
 
-    if(!timer.start(TIMER_INTERVAL_SECONDS)) {
+    if(!timer.start(
+        TIMER_INTERVAL_SECONDS
+    )) {
         return;
     }
 
-    if(!epoll.add(timer.getFd(), EPOLLIN)) {
+    if(!epoll.add(
+        timer.getFd(),
+        EPOLLIN
+    )) {
         return;
     }
+
+    if(completion_fd == -1) {
+        std::cerr
+            << "Reactor "
+            << id
+            << ": worker completion eventfd unavailable"
+            << std::endl;
+
+        return;
+    }
+
+    if(!epoll.add(
+        completion_fd,
+        EPOLLIN
+    )) {
+        return;
+    }
+
+    std::cout
+        << "Reactor "
+        << id
+        << " started on port "
+        << port
+        << std::endl;
 
     while(shutdown_requested == 0) {
         struct epoll_event events[1024];
 
-        int ready = epoll.wait(events, 1024, -1);
+        const int ready =
+            epoll.wait(
+                events,
+                1024,
+                -1
+            );
 
         if(ready == -1) {
             if(errno == EINTR) {
@@ -399,11 +693,12 @@ void Reactor::run(int port) {
             break;
         }
 
-        for(int i = 0; i < ready; i++) {
+        for(int i = 0; i < ready; ++i) {
             handleEvent(events[i]);
         }
     }
 }
+
 
 const Metrics& Reactor::getMetrics() const {
     return metrics;

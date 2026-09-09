@@ -59,9 +59,43 @@ services:
     networks:
       - aorta
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aorta-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - lb
+      - server1
+      - server2
+      - server3
+    networks:
+      - aorta
+
+  grafana:
+    image: grafana/grafana:13.2.1
+    container_name: aorta-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources/prometheus.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+      - ./grafana/provisioning/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - aorta
+
 networks:
+
   aorta:
     driver: bridge
 
 volumes:
+
   redis_data:
+
+  grafana_data:

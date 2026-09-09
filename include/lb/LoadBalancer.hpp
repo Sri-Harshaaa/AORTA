@@ -11,6 +11,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -26,11 +27,20 @@ private:
     static constexpr std::size_t MAX_CONNECTIONS =
         100000;
 
+    enum class RoutingMode {
+        RoundRobin,
+        ConsistentHash
+    };
+
     struct ConnectionPair {
 
         int client_fd{-1};
 
         int backend_fd{-1};
+
+        uint32_t current_client_events{0};
+
+        uint32_t current_backend_events{0};
 
         bool backend_connecting{false};
 
@@ -54,6 +64,13 @@ private:
 
         std::size_t backend_to_client_offset{0};
     };
+
+    int reactor_id{0};
+    int reactor_count{1};
+
+    RoutingMode routing_mode{RoutingMode::RoundRobin};
+
+    std::size_t next_backend_index{0};
 
     BackendPool backend_pool;
 
@@ -121,8 +138,19 @@ private:
         bool& connecting
     );
 
+    std::size_t selectRoundRobinBackend();
+
+    std::optional<std::size_t> selectBackend(
+        const std::string& client_ip
+    );
+
+    static RoutingMode loadRoutingMode();
+
 public:
-    LoadBalancer();
+    LoadBalancer(
+        int reactor_id,
+        int reactor_count
+    );
 
     void start();
 };
