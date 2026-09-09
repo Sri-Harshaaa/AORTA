@@ -1,846 +1,266 @@
 {
-  "annotations": {
-    "list": []
-  },
+  "annotations": { "list": [] },
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "links": [],
-  "liveNow": false,
+  "liveNow": true,
   "panels": [
     {
-      "type": "row",
-      "title": "AORTA OVERVIEW",
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "collapsed": false,
-      "panels": []
-    },
-    {
-      "type": "stat",
-      "title": "Request Rate",
-      "description": "Total request throughput across AORTA backend servers.",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum(rate(aorta_requests_total[1m]))",
-          "legendFormat": "req/s"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "decimals": 1,
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 25000
-              },
-              {
-                "color": "red",
-                "value": 50000
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 1
-      },
+      "id": 1,
+      "type": "text",
+      "title": "",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value"
-      },
-      "pluginVersion": "12.0.0"
+        "mode": "markdown",
+        "content": "### AORTA\n**Distributed systems observability**\n\nTCP Load Balancer\n3 HTTP Backends"
+      }
     },
     {
+      "id": 2,
       "type": "stat",
-      "title": "Active Connections",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "aorta_lb_active_connections",
-          "legendFormat": "connections"
-        }
-      ],
+      "title": "REQUEST RATE",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum(rate(aorta_requests_total[1m]))" } ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0
-        },
-        "overrides": []
+        "defaults": { "unit": "reqps", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 25000 }, { "color": "red", "value": 50000 } ] } }
       },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 1
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value"
-      },
-      "pluginVersion": "12.0.0"
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "graphMode": "area", "colorMode": "value", "textMode": "auto" }
     },
     {
+      "id": 3,
       "type": "stat",
-      "title": "Healthy Backends",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "aorta_lb_healthy_backends",
-          "legendFormat": "healthy"
-        }
-      ],
+      "title": "ERROR RATE",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "100 * sum(rate(aorta_errors_total[1m])) / clamp_min(sum(rate(aorta_requests_total[1m])), 0.001)" } ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0,
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 2
-              },
-              {
-                "color": "green",
-                "value": 3
-              }
-            ]
-          }
-        },
-        "overrides": []
+        "defaults": { "unit": "percent", "decimals": 2, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 } ] } }
       },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 12,
-        "y": 1
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "value",
-        "colorMode": "value"
-      },
-      "pluginVersion": "12.0.0"
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "graphMode": "area", "colorMode": "value" }
     },
     {
+      "id": 4,
       "type": "stat",
-      "title": "Error Rate",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "100 * sum(rate(aorta_errors_total[1m])) / clamp_min(sum(rate(aorta_requests_total[1m])), 0.001)",
-          "legendFormat": "errors"
-        }
-      ],
+      "title": "LB CONNECTIONS",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "aorta_lb_active_connections" } ],
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "text" } } },
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "graphMode": "area", "colorMode": "value" }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "HEALTHY BACKENDS",
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "aorta_lb_healthy_backends" } ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "decimals": 2,
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          }
-        },
-        "overrides": []
+        "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "orange", "value": 2 }, { "color": "green", "value": 3 } ] } }
       },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 18,
-        "y": 1
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value"
-      },
-      "pluginVersion": "12.0.0"
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "graphMode": "none", "colorMode": "value" }
     },
     {
-      "type": "row",
-      "title": "THROUGHPUT",
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 5
+      "id": 6,
+      "type": "stat",
+      "title": "FAILOVERS",
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum(aorta_lb_backend_failovers)" } ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 } ] } }
       },
-      "collapsed": false,
-      "panels": []
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "graphMode": "none", "colorMode": "value" }
     },
     {
+      "id": 14,
       "type": "timeseries",
-      "title": "Requests / Second",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
+      "title": "Global Throughput",
+      "gridPos": { "x": 0, "y": 4, "w": 14, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
       "targets": [
-        {
-          "refId": "A",
-          "expr": "sum by (job) (rate(aorta_requests_total[1m]))",
-          "legendFormat": "{{job}}"
-        }
+        { "refId": "A", "expr": "sum(rate(aorta_requests_total[1m]))", "legendFormat": "Requests" },
+        { "refId": "B", "expr": "sum(rate(aorta_responses_total[1m]))", "legendFormat": "Responses" }
       ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "lineWidth": 2,
-          "fillOpacity": 15,
-          "spanNulls": true
-        },
-        "overrides": []
+        "defaults": { "unit": "reqps", "custom": { "fillOpacity": 15, "gradientMode": "opacity", "lineWidth": 2, "spanNulls": true } }
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 6
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.0.0"
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
     },
     {
-      "type": "timeseries",
-      "title": "Responses / Second",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum by (job) (rate(aorta_responses_total[1m]))",
-          "legendFormat": "{{job}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "lineWidth": 2,
-          "fillOpacity": 15,
-          "spanNulls": true
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 6
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.0.0"
-    },
-    {
-      "type": "row",
-      "title": "LATENCY",
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 14
-      },
-      "collapsed": false,
-      "panels": []
-    },
-    {
+      "id": 15,
       "type": "timeseries",
       "title": "Latency Percentiles",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
+      "gridPos": { "x": 14, "y": 4, "w": 10, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
       "targets": [
-        {
-          "refId": "A",
-          "expr": "aorta_latency_p50_ms",
-          "legendFormat": "{{job}} p50"
-        },
-        {
-          "refId": "B",
-          "expr": "aorta_latency_p95_ms",
-          "legendFormat": "{{job}} p95"
-        },
-        {
-          "refId": "C",
-          "expr": "aorta_latency_p99_ms",
-          "legendFormat": "{{job}} p99"
-        }
+        { "refId": "A", "expr": "max(aorta_latency_p50_ms)", "legendFormat": "p50" },
+        { "refId": "B", "expr": "max(aorta_latency_p95_ms)", "legendFormat": "p95" },
+        { "refId": "C", "expr": "max(aorta_latency_p99_ms)", "legendFormat": "p99" }
       ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "ms",
-          "decimals": 2,
-          "lineWidth": 2,
-          "fillOpacity": 8,
-          "spanNulls": true
-        },
-        "overrides": []
+        "defaults": { "unit": "ms", "custom": { "fillOpacity": 10, "gradientMode": "opacity", "lineWidth": 2, "spanNulls": true } }
       },
-      "gridPos": {
-        "h": 9,
-        "w": 16,
-        "x": 0,
-        "y": 15
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.0.0"
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
     },
     {
+      "id": 8,
       "type": "stat",
-      "title": "Cluster P95",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "max(aorta_latency_p95_ms)",
-          "legendFormat": "p95"
-        }
-      ],
+      "title": "SERVER 1 · 8081",
+      "gridPos": { "x": 0, "y": 13, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "aorta_lb_backend_healthy{backend=\"server1\",port=\"8081\"}" } ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms",
-          "decimals": 2
-        },
-        "overrides": []
+          "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ]
+        }
       },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 16,
-        "y": 15
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value"
-      },
-      "pluginVersion": "12.0.0"
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "colorMode": "value", "graphMode": "none" }
     },
     {
+      "id": 11,
       "type": "stat",
-      "title": "Cluster P99",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "max(aorta_latency_p99_ms)",
-          "legendFormat": "p99"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms",
-          "decimals": 2
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 16,
-        "y": 19
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value"
-      },
-      "pluginVersion": "12.0.0"
+      "title": "S1 ACTIVE CONN",
+      "gridPos": { "x": 4, "y": 13, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "aorta_lb_backend_connections{backend=\"server1\",port=\"8081\"}" } ],
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "graphMode": "area", "colorMode": "value" }
     },
     {
+      "id": 9,
       "type": "stat",
-      "title": "Max Latency",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "max(aorta_latency_max_ms)",
-          "legendFormat": "max"
-        }
-      ],
+      "title": "SERVER 2 · 8082",
+      "gridPos": { "x": 8, "y": 13, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "aorta_lb_backend_healthy{backend=\"server2\",port=\"8082\"}" } ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms",
-          "decimals": 2
-        },
-        "overrides": []
+          "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ]
+        }
       },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 16,
-        "y": 23
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value"
-      },
-      "pluginVersion": "12.0.0"
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "colorMode": "value", "graphMode": "none" }
     },
     {
-      "type": "row",
-      "title": "LOAD BALANCER",
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 27
-      },
-      "collapsed": false,
-      "panels": []
+      "id": 12,
+      "type": "stat",
+      "title": "S2 ACTIVE CONN",
+      "gridPos": { "x": 12, "y": 13, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "aorta_lb_backend_connections{backend=\"server2\",port=\"8082\"}" } ],
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "graphMode": "area", "colorMode": "value" }
     },
     {
+      "id": 10,
+      "type": "stat",
+      "title": "SERVER 3 · 8083",
+      "gridPos": { "x": 16, "y": 13, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "aorta_lb_backend_healthy{backend=\"server3\",port=\"8083\"}" } ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ]
+        }
+      },
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "S3 ACTIVE CONN",
+      "gridPos": { "x": 20, "y": 13, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "aorta_lb_backend_connections{backend=\"server3\",port=\"8083\"}" } ],
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "graphMode": "area", "colorMode": "value" }
+    },
+    {
+      "id": 16,
+      "type": "stat",
+      "title": "P95 LATENCY",
+      "gridPos": { "x": 0, "y": 17, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "max(aorta_latency_p95_ms)" } ],
+      "fieldConfig": { "defaults": { "unit": "ms", "decimals": 2, "color": { "mode": "fixed", "fixedColor": "text" } } },
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "colorMode": "value" }
+    },
+    {
+      "id": 17,
+      "type": "stat",
+      "title": "P99 LATENCY",
+      "gridPos": { "x": 4, "y": 17, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "max(aorta_latency_p99_ms)" } ],
+      "fieldConfig": { "defaults": { "unit": "ms", "decimals": 2, "color": { "mode": "fixed", "fixedColor": "text" } } },
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "colorMode": "value" }
+    },
+    {
+      "id": 18,
+      "type": "stat",
+      "title": "MAX LATENCY",
+      "gridPos": { "x": 8, "y": 17, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "max(aorta_latency_max_ms)" } ],
+      "fieldConfig": { "defaults": { "unit": "ms", "decimals": 2, "color": { "mode": "fixed", "fixedColor": "orange" } } },
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] }, "colorMode": "value" }
+    },
+    {
+      "id": 19,
+      "type": "stat",
+      "title": "TOTAL REQUESTS",
+      "gridPos": { "x": 12, "y": 17, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum(aorta_requests_total)" } ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] } }
+    },
+    {
+      "id": 20,
+      "type": "stat",
+      "title": "TOTAL RESPONSES",
+      "gridPos": { "x": 16, "y": 17, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum(aorta_responses_total)" } ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] } }
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "TOTAL ERRORS",
+      "gridPos": { "x": 20, "y": 17, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum(aorta_errors_total)" } ],
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "red" } } },
+      "options": { "reduceOptions": { "calcs": [ "lastNotNull" ] } }
+    },
+    {
+      "id": 22,
       "type": "timeseries",
-      "title": "Backend Connections",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "aorta_lb_backend_connections",
-          "legendFormat": "{{backend}}:{{port}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "lineWidth": 2,
-          "fillOpacity": 12,
-          "spanNulls": true
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 28
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.0.0"
+      "title": "Backend Request Distribution",
+      "gridPos": { "x": 0, "y": 21, "w": 12, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum by (job) (rate(aorta_requests_total[1m]))", "legendFormat": "{{job}}" } ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 15, "gradientMode": "opacity", "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } }
     },
     {
+      "id": 23,
       "type": "timeseries",
-      "title": "Backend Health",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "aorta_lb_backend_healthy",
-          "legendFormat": "{{backend}}:{{port}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "min": 0,
-          "max": 1,
-          "lineWidth": 3,
-          "fillOpacity": 8,
-          "spanNulls": true
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 28
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.0.0"
-    },
-    {
-      "type": "row",
-      "title": "FAILURES & AVAILABILITY",
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 36
-      },
-      "collapsed": false,
-      "panels": []
-    },
-    {
-      "type": "timeseries",
-      "title": "Backend Failovers",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "aorta_lb_backend_failovers",
-          "legendFormat": "{{backend}}:{{port}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "lineWidth": 2,
-          "fillOpacity": 10,
-          "spanNulls": true
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 37
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.0.0"
-    },
-    {
-      "type": "timeseries",
-      "title": "Backend Failed Connections",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "aorta_lb_backend_failed_connections",
-          "legendFormat": "{{backend}}:{{port}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "lineWidth": 2,
-          "fillOpacity": 10,
-          "spanNulls": true
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 37
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.0.0"
-    },
-    {
-      "type": "row",
-      "title": "SERVICE HEALTH",
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 45
-      },
-      "collapsed": false,
-      "panels": []
-    },
-    {
-      "type": "timeseries",
-      "title": "Prometheus Target Availability",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "up{job=~\"aorta-.*\"}",
-          "legendFormat": "{{job}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "min": 0,
-          "max": 1,
-          "lineWidth": 3,
-          "fillOpacity": 8,
-          "spanNulls": true
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 46
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.0.0"
-    },
-    {
-      "type": "timeseries",
-      "title": "Error Throughput",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "aorta-prometheus"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum by (job) (rate(aorta_errors_total[1m]))",
-          "legendFormat": "{{job}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "lineWidth": 2,
-          "fillOpacity": 12,
-          "spanNulls": true
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 46
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.0.0"
+      "title": "Backend Connections Over Time",
+      "gridPos": { "x": 12, "y": 21, "w": 12, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "aorta-prometheus" },
+      "targets": [ { "refId": "A", "expr": "aorta_lb_backend_connections", "legendFormat": "{{backend}}:{{port}}" } ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 10, "gradientMode": "opacity", "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } }
     }
   ],
   "refresh": "5s",
   "schemaVersion": 39,
   "style": "dark",
-  "tags": [
-    "aorta",
-    "distributed-system",
-    "load-balancer",
-    "observability"
-  ],
-  "templating": {
-    "list": []
-  },
-  "time": {
-    "from": "now-15m",
-    "to": "now"
-  },
-  "timepicker": {},
+  "tags": [ "aorta", "distributed-system", "load-balancer", "observability" ],
+  "time": { "from": "now-15m", "to": "now" },
   "timezone": "browser",
-  "title": "AORTA — System Observability",
-  "uid": "aorta-overview-v2",
-  "version": 1
+  "title": "AORTA — Operations Dashboard",
+  "uid": "aorta-ops-v4"
 }
