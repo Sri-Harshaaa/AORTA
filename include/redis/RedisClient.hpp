@@ -6,6 +6,12 @@
 #include <string>
 #include <vector>
 
+struct RedisTask {
+    std::size_t id{0};
+    std::string title;
+    bool completed{false};
+};
+
 class RedisClient {
 
 private:
@@ -15,7 +21,6 @@ private:
     redisContext* context{nullptr};
 
     bool connect();
-
     bool ensureConnected();
 
 public:
@@ -77,6 +82,11 @@ public:
     bool smembers(
         const std::string& key,
         std::vector<std::string>& values
+    );
+
+    bool getAllTasks(
+        const std::string& task_set_key,
+        std::vector<RedisTask>& tasks
     );
 
     bool createTask(

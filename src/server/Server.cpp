@@ -59,7 +59,8 @@ void Server::start() {
         reactors.push_back(
             std::make_unique<Reactor>(
                 i,
-                *worker_pool
+                *worker_pool,
+                metrics
             )
         );
     }

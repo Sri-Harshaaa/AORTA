@@ -9,32 +9,116 @@ std::string LbMetrics::render(
     std::ostringstream output;
 
     output
-        << "AORTA Load Balancer\n"
-        << "active_connections "
+        << "# HELP aorta_lb_active_connections Number of active client TCP connections at the load balancer.\n"
+        << "# TYPE aorta_lb_active_connections gauge\n"
+        << "aorta_lb_active_connections "
         << active_connections
-        << "\n"
-        << "healthy_backends "
+        << "\n\n";
+
+    output
+        << "# HELP aorta_lb_healthy_backends Number of healthy backend servers.\n"
+        << "# TYPE aorta_lb_healthy_backends gauge\n"
+        << "aorta_lb_healthy_backends "
         << pool.healthyCount()
-        << "\n"
-        << "total_backends "
+        << "\n\n";
+
+    output
+        << "# HELP aorta_lb_total_backends Total number of configured backend servers.\n"
+        << "# TYPE aorta_lb_total_backends gauge\n"
+        << "aorta_lb_total_backends "
         << pool.size()
         << "\n\n";
 
-    for(std::size_t i = 0; i < pool.size(); ++i) {
+    output
+        << "# HELP aorta_lb_backend_healthy Whether a backend is healthy (1) or unhealthy (0).\n"
+        << "# TYPE aorta_lb_backend_healthy gauge\n";
 
-        const Backend& backend =
-            pool.getBackend(i);
+    for (std::size_t i = 0; i < pool.size(); ++i) {
+        const Backend& backend = pool.getBackend(i);
 
         output
-            << "backend{"
-            << "host=\"" << backend.host << "\","
-            << "port=\"" << backend.port << "\""
-            << "} "
-            << "healthy=" << (backend.healthy ? 1 : 0)
-            << " connections=" << backend.connection_count
-            << " total_connections=" << backend.total_connections
-            << " failed_connections=" << backend.failed_connections
-            << " failovers=" << backend.failovers
+            << "aorta_lb_backend_healthy{backend=\""
+            << backend.host
+            << "\",port=\""
+            << backend.port
+            << "\"} "
+            << (backend.healthy ? 1 : 0)
+            << "\n";
+    }
+
+    output << "\n";
+
+    output
+        << "# HELP aorta_lb_backend_connections Current active connections to a backend.\n"
+        << "# TYPE aorta_lb_backend_connections gauge\n";
+
+    for (std::size_t i = 0; i < pool.size(); ++i) {
+        const Backend& backend = pool.getBackend(i);
+
+        output
+            << "aorta_lb_backend_connections{backend=\""
+            << backend.host
+            << "\",port=\""
+            << backend.port
+            << "\"} "
+            << backend.connection_count
+            << "\n";
+    }
+
+    output << "\n";
+
+    output
+        << "# HELP aorta_lb_backend_total_connections Total connections handled by a backend.\n"
+        << "# TYPE aorta_lb_backend_total_connections counter\n";
+
+    for (std::size_t i = 0; i < pool.size(); ++i) {
+        const Backend& backend = pool.getBackend(i);
+
+        output
+            << "aorta_lb_backend_total_connections{backend=\""
+            << backend.host
+            << "\",port=\""
+            << backend.port
+            << "\"} "
+            << backend.total_connections
+            << "\n";
+    }
+
+    output << "\n";
+
+    output
+        << "# HELP aorta_lb_backend_failed_connections Total failed backend connections.\n"
+        << "# TYPE aorta_lb_backend_failed_connections counter\n";
+
+    for (std::size_t i = 0; i < pool.size(); ++i) {
+        const Backend& backend = pool.getBackend(i);
+
+        output
+            << "aorta_lb_backend_failed_connections{backend=\""
+            << backend.host
+            << "\",port=\""
+            << backend.port
+            << "\"} "
+            << backend.failed_connections
+            << "\n";
+    }
+
+    output << "\n";
+
+    output
+        << "# HELP aorta_lb_backend_failovers Total backend failovers.\n"
+        << "# TYPE aorta_lb_backend_failovers counter\n";
+
+    for (std::size_t i = 0; i < pool.size(); ++i) {
+        const Backend& backend = pool.getBackend(i);
+
+        output
+            << "aorta_lb_backend_failovers{backend=\""
+            << backend.host
+            << "\",port=\""
+            << backend.port
+            << "\"} "
+            << backend.failovers
             << "\n";
     }
 

@@ -35,42 +35,24 @@ bool TaskManager::getAll(
     return worker_pool.submit(
         reactor_id,
         [callback = std::move(callback), result, success](RedisClient& redis) mutable {
-            bool operation_success = true;
+            std::vector<RedisTask> redis_tasks;
 
-            std::vector<std::string> ids;
+            *success =
+                redis.getAllTasks(
+                    TASK_SET_KEY,
+                    redis_tasks
+                );
 
-            if(!redis.smembers(
-                TASK_SET_KEY,
-                ids
-            )) {
-                operation_success = false;
-            } else {
-                result->reserve(ids.size());
+            if(*success) {
+                result->reserve(
+                    redis_tasks.size()
+                );
 
-                for(const std::string& id_string : ids) {
-                    std::size_t id{0};
-
-                    try {
-                        id = std::stoull(id_string);
-                    } catch(...) {
-                        continue;
-                    }
-
-                    std::string title;
-                    bool completed{false};
-
-                    if(!redis.hgetall(
-                        taskKey(id),
-                        title,
-                        completed
-                    )) {
-                        continue;
-                    }
-
+                for(const RedisTask& redis_task : redis_tasks) {
                     result->push_back({
-                        id,
-                        title,
-                        completed
+                        redis_task.id,
+                        redis_task.title,
+                        redis_task.completed
                     });
                 }
 
@@ -83,9 +65,11 @@ bool TaskManager::getAll(
                 );
             }
 
-            *success = operation_success;
-
-            return [callback = std::move(callback), result, success]() mutable {
+            return [
+                callback = std::move(callback),
+                result,
+                success
+            ]() mutable {
                 callback(
                     *success,
                     *result
@@ -94,7 +78,6 @@ bool TaskManager::getAll(
         }
     );
 }
-
 
 bool TaskManager::create(
     const std::string& title,

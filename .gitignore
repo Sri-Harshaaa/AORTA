@@ -1,1 +1,59 @@
+# =========================
+# Build artifacts
+# =========================
+
 build/
+cmake-build-*/
+
+# Compiled binaries
+aorta
+aorta_lb
+aorta-lb
+
+# Object / dependency files
+*.o
+*.o.d
+*.a
+*.so
+*.so.*
+*.d
+
+# =========================
+# Temporary / backup files
+# =========================
+
+*.bak
+*~
+*.swp
+*.tmp
+
+# =========================
+# IDE / editor files
+# =========================
+
+.idea/
+
+# =========================
+# OS files
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+# Environment / secrets
+# =========================
+
+.env
+.env.*
+
+# =========================
+# CMake generated files
+# =========================
+
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+install_manifest.txt
+compile_commands.json

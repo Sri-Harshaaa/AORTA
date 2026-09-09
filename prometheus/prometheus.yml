@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 2s
+
+scrape_configs:
+  - job_name: "aorta-lb"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["lb:9000"]
+
+  - job_name: "aorta-server1"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["server1:8081"]
+
+  - job_name: "aorta-server2"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["server2:8082"]
+
+  - job_name: "aorta-server3"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["server3:8083"]

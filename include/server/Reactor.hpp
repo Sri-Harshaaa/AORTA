@@ -22,15 +22,16 @@ private:
 
     struct ConnectionState {
         std::chrono::steady_clock::time_point deadline;
+        std::chrono::steady_clock::time_point request_start;
         std::uint64_t generation{0};
+        bool request_in_flight{false};
         bool redis_pending{false};
     };
 
     int id;
     WorkerPool& worker_pool;
     TaskManager task_manager;
-
-    Metrics metrics;
+    Metrics& metrics;
     HttpHandler http_handler;
 
     Socket listen_socket;
@@ -71,7 +72,8 @@ private:
 public:
     Reactor(
         int id,
-        WorkerPool& worker_pool
+        WorkerPool& worker_pool,
+        Metrics& metrics
     );
 
     void run(int port);

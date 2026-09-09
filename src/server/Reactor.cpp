@@ -14,11 +14,13 @@ extern volatile std::sig_atomic_t shutdown_requested;
 
 Reactor::Reactor(
     int id,
-    WorkerPool& worker_pool
+    WorkerPool& worker_pool,
+    Metrics& metrics
 )
     : id(id),
       worker_pool(worker_pool),
       task_manager(worker_pool, static_cast<std::size_t>(id)),
+      metrics(metrics),
       http_handler(&task_manager, metrics),
       completion_fd(
           worker_pool.getCompletionFd(
@@ -83,7 +85,9 @@ void Reactor::handleAccept() {
                 + std::chrono::seconds(
                     REQUEST_TIMEOUT_SECONDS
                 ),
+            std::chrono::steady_clock::time_point{},
             generation,
+            false,
             false
         };
     }
@@ -285,6 +289,10 @@ void Reactor::handleClient(
             const HttpRequest request =
                 connection.getRequest();
 
+            state.request_start =
+                std::chrono::steady_clock::now();
+            state.request_in_flight = true;
+
             metrics.incrementRequests();
 
             const bool close_after_write =
@@ -329,6 +337,22 @@ void Reactor::handleClient(
                 );
 
                 return;
+            }
+
+            if(state.request_in_flight) {
+                const auto latency =
+                    std::chrono::steady_clock::now() -
+                    state.request_start;
+
+                metrics.recordLatency(
+                    static_cast<std::uint64_t>(
+                        std::chrono::duration_cast<
+                            std::chrono::microseconds
+                        >(latency).count()
+                    )
+                );
+
+                state.request_in_flight = false;
             }
 
             if(close_after_write) {
@@ -482,6 +506,22 @@ void Reactor::completeAsyncResponse(
 
     if(!state.redis_pending) {
         return;
+    }
+
+    if(state.request_in_flight) {
+        const auto latency =
+            std::chrono::steady_clock::now() -
+            state.request_start;
+
+        metrics.recordLatency(
+            static_cast<std::uint64_t>(
+                std::chrono::duration_cast<
+                    std::chrono::microseconds
+                >(latency).count()
+            )
+        );
+
+        state.request_in_flight = false;
     }
 
     Connection& connection =

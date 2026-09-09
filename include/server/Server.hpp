@@ -1,6 +1,7 @@
 #pragma once
 
 #include "server/Reactor.hpp"
+#include "server/Metrics.hpp"
 #include "worker/WorkerPool.hpp"
 
 #include <cstddef>
@@ -14,6 +15,7 @@ private:
     int reactor_count{1};
     int port{8080};
 
+    Metrics metrics;
     std::unique_ptr<WorkerPool> worker_pool;
 
     std::vector<std::unique_ptr<Reactor>> reactors;

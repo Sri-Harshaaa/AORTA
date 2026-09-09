@@ -504,6 +504,144 @@ bool RedisClient::smembers(
     return true;
 }
 
+bool RedisClient::getAllTasks(
+    const std::string& task_set_key,
+    std::vector<RedisTask>& tasks
+) {
+    if(!ensureConnected()) {
+        return false;
+    }
+
+    static const char* SCRIPT = R"lua(
+local ids = redis.call('SMEMBERS', KEYS[1])
+local result = {}
+
+for _, id in ipairs(ids) do
+    local task_key = 'task:' .. id
+    local fields = redis.call('HGETALL', task_key)
+
+    local title = nil
+    local completed = nil
+
+    for i = 1, #fields, 2 do
+        local field = fields[i]
+        local value = fields[i + 1]
+
+        if field == 'title' then
+            title = value
+        elseif field == 'completed' then
+            completed = value
+        end
+    end
+
+    if title ~= nil and completed ~= nil then
+        table.insert(result, id)
+        table.insert(result, title)
+        table.insert(result, completed)
+    end
+end
+
+return result
+)lua";
+
+    redisReply* reply =
+        static_cast<redisReply*>(
+            redisCommand(
+                context,
+                "EVAL %b 1 %b",
+                SCRIPT,
+                std::strlen(SCRIPT),
+                task_set_key.data(),
+                task_set_key.size()
+            )
+        );
+
+    if(reply == nullptr) {
+        return false;
+    }
+
+    if(reply->type != REDIS_REPLY_ARRAY) {
+        freeReplyObject(reply);
+        return false;
+    }
+
+    if(reply->elements % 3 != 0) {
+        freeReplyObject(reply);
+        return false;
+    }
+
+    std::vector<RedisTask> result;
+    result.reserve(reply->elements / 3);
+
+    for(
+        std::size_t i = 0;
+        i < reply->elements;
+        i += 3
+    ) {
+        redisReply* id_reply =
+            reply->element[i];
+
+        redisReply* title_reply =
+            reply->element[i + 1];
+
+        redisReply* completed_reply =
+            reply->element[i + 2];
+
+        if(
+            id_reply == nullptr ||
+            title_reply == nullptr ||
+            completed_reply == nullptr
+        ) {
+            continue;
+        }
+
+        if(
+            id_reply->type != REDIS_REPLY_STRING ||
+            title_reply->type != REDIS_REPLY_STRING ||
+            completed_reply->type != REDIS_REPLY_STRING
+        ) {
+            continue;
+        }
+
+        std::size_t id{0};
+
+        try {
+            id = std::stoull(
+                std::string(
+                    id_reply->str,
+                    id_reply->len
+                )
+            );
+        } catch(...) {
+            continue;
+        }
+
+        RedisTask task;
+
+        task.id = id;
+
+        task.title.assign(
+            title_reply->str,
+            title_reply->len
+        );
+
+        task.completed =
+            std::string(
+                completed_reply->str,
+                completed_reply->len
+            ) == "1";
+
+        result.push_back(
+            std::move(task)
+        );
+    }
+
+    freeReplyObject(reply);
+
+    tasks = std::move(result);
+
+    return true;
+}
 
 bool RedisClient::createTask(
     const std::string& next_id_key,
