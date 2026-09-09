@@ -136,7 +136,7 @@ recv() / send()
 close()
 ```
 
-Connections are registered with `epoll`, tracked by the reactor, and given connection deadlines so inactive connections can be removed. fileciteturn76file1L95-L153
+Connections are registered with `epoll`, tracked by the reactor, and given connection deadlines so inactive connections can be removed.
 
 ### ⚡ Why epoll?
 
@@ -205,7 +205,7 @@ The parser maintains explicit states for:
 - chunk-data CRLF
 - trailers
 
-It also supports incremental parsing when more TCP data is required. fileciteturn75file0L21-L44
+It also supports incremental parsing when more TCP data is required.
 
 ### 🛡️ Parser limits
 
@@ -217,7 +217,7 @@ It also supports incremental parsing when more TCP data is required. filecite
 | Maximum header count | **100** |
 | Maximum request body | **1 MiB** |
 
-The parser has explicit outcomes for incomplete input, malformed requests, oversized requests/headers/body, unsupported transfer encoding, and unsupported HTTP versions. fileciteturn75file0L34-L51
+The parser has explicit outcomes for incomplete input, malformed requests, oversized requests/headers/body, unsupported transfer encoding, and unsupported HTTP versions.
 
 ### 🔀 HTTP methods
 
@@ -232,7 +232,7 @@ AORTA's HTTP layer handles:
 | `HEAD` | ✅ |
 | `OPTIONS` | ✅ |
 
-`GET`, `POST`, `PUT`, and `DELETE` power the Task Manager API. `HEAD` and `OPTIONS` are handled at the HTTP layer, with `OPTIONS` advertising the supported methods and `HEAD` returning headers without the response body. fileciteturn74file2L343-L421 fileciteturn78file1L221-L235
+`GET`, `POST`, `PUT`, and `DELETE` power the Task Manager API. `HEAD` and `OPTIONS` are handled at the HTTP layer, with `OPTIONS` advertising the supported methods and `HEAD` returning headers without the response body.
 
 ---
 
@@ -253,7 +253,7 @@ PUT  /tasks/:id
 DELETE /tasks/:id
 ```
 
-The server also supports serving static files from its `public` directory for the root path and file-like requests. fileciteturn74file2L328-L421
+The server also supports serving static files from its `public` directory for the root path and file-like requests.
 
 ---
 
@@ -280,7 +280,7 @@ Each reactor owns its network-side connection state and runs an event loop. Work
                     Redis
 ```
 
-The load balancer follows the same event-driven approach and maintains reactor state while handling client/backend events, health timers, and connection pairs. fileciteturn79file3L332-L427
+The load balancer follows the same event-driven approach and maintains reactor state while handling client/backend events, health timers, and connection pairs.
 
 ---
 
@@ -355,7 +355,7 @@ Connection 4 → Server 1
 
 #### 🧭 Consistent Hashing
 
-AORTA can build a consistent-hash ring with virtual nodes and use hashing-based routing. The routing mode is selected through `AORTA_LB_ROUTING`; Round Robin is the default, while `consistent_hash`, `consistent-hash`, or `hash` selects consistent hashing. fileciteturn76file4L363-L428
+AORTA can build a consistent-hash ring with virtual nodes and use hashing-based routing. The routing mode is selected through `AORTA_LB_ROUTING`; Round Robin is the default, while `consistent_hash`, `consistent-hash`, or `hash` selects consistent hashing.
 
 ---
 
@@ -384,7 +384,7 @@ Backends are actively monitored by the load balancer.
                 Route to healthy nodes
 ```
 
-Health checking is integrated into the load balancer's event-driven loop through a timer and `epoll`. fileciteturn79file3L357-L375
+Health checking is integrated into the load balancer's event-driven loop through a timer and `epoll`.
 
 ---
 
@@ -405,7 +405,7 @@ It is intentionally simple so that the interesting part of the project remains t
 | 💾 Persistence | Store tasks in Redis |
 | 🔁 Distributed access | Access the application through the load balancer |
 
-The frontend talks to the `/tasks` API and provides task creation, editing, completion, and deletion. fileciteturn75file5L541-L637
+The frontend talks to the `/tasks` API and provides task creation, editing, completion, and deletion.
 
 ### 🌐 Open the application
 
@@ -446,7 +446,7 @@ AORTA Services
 └─────────────┘
 ```
 
-The repository contains Prometheus configuration, Grafana datasource provisioning, and the dashboard definition. fileciteturn76file0L32-L42
+The repository contains Prometheus configuration, Grafana datasource provisioning, and the dashboard definition.
 
 ### 📈 What the dashboard shows
 
@@ -459,7 +459,7 @@ The dashboard is designed to answer operational questions such as:
 - Which backend is healthy?
 - Have any backend failovers occurred?
 
-The dashboard includes global throughput, latency percentile graphs, backend health cards, and connection-related panels. fileciteturn77file4L197-L233
+The dashboard includes global throughput, latency percentile graphs, backend health cards, and connection-related panels.
 
 ### 🌐 Open the monitoring tools
 
@@ -471,6 +471,14 @@ Once the stack is running locally:
 | 📡 Prometheus | `http://localhost:9090` |
 | 📊 Grafana | `http://localhost:3000` |
 | 📈 Raw AORTA metrics | `http://localhost:9000/metrics` |
+
+> These are **local runtime addresses**. They work on the machine running the Docker stack; they are not links to a remotely hosted AORTA instance.
+
+---
+
+# 🖥️ Platform Requirement
+
+AORTA uses Linux-specific networking primitives including `epoll`, `accept4`, and `SO_REUSEPORT`. Native execution is intended for Linux. On Windows, use WSL2 or Docker Desktop; on macOS, use Docker Desktop for the complete Docker Compose stack.
 
 ---
 
@@ -525,7 +533,7 @@ docker --version
 docker compose version
 ```
 
-Arch's Docker documentation recommends installing Docker, starting/enabling the Docker service, and installing the `docker-compose` package for Compose projects. citeturn361122search1
+Arch's Docker documentation recommends installing Docker, starting/enabling the Docker service, and installing the `docker-compose` package for Compose projects.
 
 ### 🐧 Ubuntu / Debian
 
@@ -544,7 +552,7 @@ docker --version
 docker compose version
 ```
 
-For the official Docker Engine repository installation, Docker provides distribution-specific instructions; the Compose plugin is installed as `docker-compose-plugin`. citeturn732978search3turn732978search0
+For the official Docker Engine repository installation, Docker provides distribution-specific instructions; the Compose plugin is installed as `docker-compose-plugin`.
 
 ### 🐧 Fedora
 
@@ -561,7 +569,7 @@ docker --version
 docker compose version
 ```
 
-These are based on Docker's current Fedora installation instructions. citeturn361122search2
+These are based on Docker's current Fedora installation instructions.
 
 ### 🪟 Windows
 
@@ -572,7 +580,7 @@ docker --version
 docker compose version
 ```
 
-Docker Desktop includes Docker Engine, Docker CLI, and Docker Compose. citeturn361122search5turn732978search1
+Docker Desktop includes Docker Engine, Docker CLI, and Docker Compose.
 
 ### 🍎 macOS
 
@@ -583,7 +591,7 @@ docker --version
 docker compose version
 ```
 
-Docker Desktop is the recommended way to obtain Docker Compose on macOS. citeturn361122search5turn732978search2
+Docker Desktop is the recommended way to obtain Docker Compose on macOS.
 
 ---
 
@@ -667,23 +675,6 @@ Open:
 
 **http://localhost:3000**
 
-### 🔐 Grafana Login
-
-Use the following default credentials:
-
-```text
-Username: admin
-Password: admin
-```
-
-### 🧭 Open the AORTA Operations Dashboard
-
-1. Open **Grafana** at `http://localhost:3000`.
-2. Log in with the credentials above.
-3. Click **Dashboards** in the Grafana navigation.
-4. Select the **AORTA** folder.
-5. Select **AORTA — Operations Dashboard**.
-
 ### 📡 Open Prometheus
 
 Open:
@@ -700,7 +691,7 @@ curl http://localhost:9000/metrics
 
 # 📋 Task API
 
-The Task Manager exposes a simple CRUD API.
+The Task Manager exposes a simple CRUD API. Task objects use `id`, `title`, and `completed`; there is no `description` field in the current API.
 
 | Method | Endpoint | Description |
 |:---:|:---|:---|
@@ -714,7 +705,7 @@ The Task Manager exposes a simple CRUD API.
 ```bash
 curl -X POST http://localhost:9000/tasks \
   -H "Content-Type: application/json" \
-  -d '{"title":"Build AORTA","description":"Finish the distributed system"}'
+  -d '{"title":"Build AORTA","completed":false}'
 ```
 
 ### 📋 Read
@@ -728,7 +719,7 @@ curl http://localhost:9000/tasks
 ```bash
 curl -X PUT http://localhost:9000/tasks/1 \
   -H "Content-Type: application/json" \
-  -d '{"title":"Build AORTA v2","description":"Improve performance"}'
+  -d '{"title":"Build AORTA v2","completed":true}'
 ```
 
 ### 🗑️ Delete
@@ -757,9 +748,56 @@ The optimized path uses a **single Lua `EVAL` operation**, reducing unnecessary 
 
 ---
 
+## 🧪 Benchmark Tool: `wrk`
+
+Before running any benchmark command, first check that `wrk` is installed:
+
+```bash
+wrk --version
+```
+
+If `wrk` is not installed, use the appropriate installation command below.
+
+### Arch Linux / Garuda Linux
+
+```bash
+sudo pacman -S wrk
+```
+
+### Ubuntu / Debian
+
+```bash
+sudo apt update
+sudo apt install wrk
+```
+
+### Fedora
+
+```bash
+sudo dnf install wrk
+```
+
+### macOS
+
+```bash
+brew install wrk
+```
+
+### Windows
+
+Run `wrk` through WSL2 or another Linux environment.
+
+After installation, verify it again:
+
+```bash
+wrk --version
+```
+
+---
+
 # 📈 Performance
 
-AORTA was benchmarked with [`wrk`](https://github.com/wg/wrk) under increasing client concurrency.
+AORTA was benchmarked with [`wrk`](https://github.com/wg/wrk) under increasing client concurrency. The tables below are the latest latency-characterization runs; selected peak throughput figures are also reported separately in the benchmark report.
 
 Example:
 
@@ -789,7 +827,7 @@ wrk --latency -t4 -c500 -d30s http://localhost:9000/tasks
 
 > ⚠️ These are measurements from the tested build. Actual results depend on CPU, operating system, Docker configuration, workload, and system state.
 
-The benchmark report also records an earlier optimized `/tasks` run reaching approximately **28.9K requests/sec**, while direct backend testing reached approximately **35.8K requests/sec** at c500. fileciteturn73file3L197-L212
+The benchmark report also records an earlier optimized `/tasks` run reaching approximately **28.9K requests/sec**, while direct backend testing reached approximately **35.8K requests/sec** at c500.
 
 📄 Detailed benchmark report:
 
@@ -920,7 +958,7 @@ For the detailed benchmark and performance analysis:
 
 <div align="center">
 
-## ⚡ AORTA
+## 🫀 AORTA
 
 **Networking · Concurrency · Distributed Systems · Performance**
 
