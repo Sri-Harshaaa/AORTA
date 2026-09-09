@@ -472,25 +472,6 @@ Once the stack is running locally:
 | 📊 Grafana | `http://localhost:3000` |
 | 📈 Raw AORTA metrics | `http://localhost:9000/metrics` |
 
-#### 🔐 Grafana Login
-
-Use the following default credentials:
-
-```text
-Username: admin
-Password: admin
-```
-
-#### 🧭 Open the AORTA Operations Dashboard
-
-1. Open **Grafana** at `http://localhost:3000`.
-2. Log in with the credentials above.
-3. Click **Dashboards** in the Grafana navigation.
-4. Select the **AORTA** folder.
-5. Select **AORTA — Operations Dashboard**.
-
-> These are **local runtime addresses**. They work on the machine running the Docker stack; they are not links to a remotely hosted AORTA instance.
-
 ---
 
 # 🐳 Running AORTA
@@ -685,6 +666,23 @@ Open in a browser:
 Open:
 
 **http://localhost:3000**
+
+### 🔐 Grafana Login
+
+Use the following default credentials:
+
+```text
+Username: admin
+Password: admin
+```
+
+### 🧭 Open the AORTA Operations Dashboard
+
+1. Open **Grafana** at `http://localhost:3000`.
+2. Log in with the credentials above.
+3. Click **Dashboards** in the Grafana navigation.
+4. Select the **AORTA** folder.
+5. Select **AORTA — Operations Dashboard**.
 
 ### 📡 Open Prometheus
 
