@@ -1696,6 +1696,8 @@ bool LoadBalancer::failoverConnection(
         backend_to_client[backend_fd] =
             client_fd;
 
+        backend.failovers++;
+
         return true;
     }
 
