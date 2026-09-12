@@ -1,0 +1,14 @@
+Running 10s test @ http://127.0.0.1:18080/tasks
+  8 threads and 5000 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   426.34ms  644.93ms   2.14s    80.16%
+    Req/Sec    57.36k    13.97k   97.78k    70.33%
+  Latency Distribution
+     50%    2.49ms
+     75%  802.89ms
+     90%    1.58s 
+     99%    2.06s 
+  4536623 requests in 10.10s, 639.53MB read
+  Non-2xx or 3xx responses: 4520435
+Requests/sec: 449180.29
+Transfer/sec:     63.32MB

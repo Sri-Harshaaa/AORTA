@@ -1,0 +1,149 @@
+Worker pool started with 8 workers
+Creating 16 reactors on port 18080
+Socket created FD: 19
+Epoll created FD: 20
+TimerFd created FD: 21
+Socket created FD: 22
+Epoll created FD: 23
+TimerFd created FD: 24
+Socket created FD: 25
+Epoll created FD: 26
+TimerFd created FD: 27
+Socket created FD: 28
+Epoll created FD: 29
+TimerFd created FD: 30
+Socket created FD: 31
+Epoll created FD: 32
+TimerFd created FD: 33
+Socket created FD: 34
+Epoll created FD: 35
+TimerFd created FD: 36
+Socket created FD: 37
+Epoll created FD: 38
+TimerFd created FD: 39
+Socket created FD: 40
+Epoll created FD: 41
+TimerFd created FD: 42
+Socket created FD: 43
+Epoll created FD: 44
+TimerFd created FD: 45
+Socket created FD: 46
+Epoll created FD: 47
+TimerFd created FD: 48
+Socket created FD: 49
+Epoll created FD: 50
+TimerFd created FD: 51
+Socket created FD: 52
+Epoll created FD: 53
+TimerFd created FD: 54
+Socket created FD: 55
+Epoll created FD: 56
+TimerFd created FD: 57
+Socket created FD: 58
+Epoll created FD: 59
+TimerFd created FD: 60
+Socket created FD: 61
+Epoll created FD: 62
+TimerFd created FD: 63
+Socket created FD: 64
+Epoll created FD: 65
+TimerFd created FD: 66
+bind() successful
+listen() successful
+bind() successful
+Reactor 0 started on port 18080
+listen() successful
+bind() successful
+bind() successful
+Reactor 1 started on port 18080listen() successful
+
+Reactor 3 started on port 18080
+bind() successful
+listen() successful
+listen() successful
+Reactor 4bind() successful
+listen() successful
+ started on port Reactor 2 started on port 18080
+Reactor 6 started on port 18080
+18080
+bind() successful
+bind() successful
+bind() successful
+listen() successful
+listen() successfulReactor 
+8 started on port 18080
+listen() successful
+Reactor 5 started on port 18080
+bind() successful
+listen() successful
+Reactor 7 started on port 18080
+Reactor bind() successful9 started on port 
+18080
+listen() successful
+Reactor 10 started on port 18080
+bind() successful
+listen() successful
+Reactor 11 started on port 18080
+bind() successful
+listen() successful
+bind() successful
+listen() successful
+Reactor 12 started on port 18080
+Reactor 13 started on port 18080
+bind() successful
+listen() successful
+bind() successful
+listen() successful
+Reactor 14 started on port 18080
+Reactor 15 started on port 18080
+
+Shutdown requested
+All reactors stopped
+TimerFd closed FD: 21
+Epoll closed FD: 20
+Socket closed FD: 19
+TimerFd closed FD: 24
+Epoll closed FD: 23
+Socket closed FD: 22
+TimerFd closed FD: 27
+Epoll closed FD: 26
+Socket closed FD: 25
+TimerFd closed FD: 30
+Epoll closed FD: 29
+Socket closed FD: 28
+TimerFd closed FD: 33
+Epoll closed FD: 32
+Socket closed FD: 31
+TimerFd closed FD: 36
+Epoll closed FD: 35
+Socket closed FD: 34
+TimerFd closed FD: 39
+Epoll closed FD: 38
+Socket closed FD: 37
+TimerFd closed FD: 42
+Epoll closed FD: 41
+Socket closed FD: 40
+TimerFd closed FD: 45
+Epoll closed FD: 44
+Socket closed FD: 43
+TimerFd closed FD: 48
+Epoll closed FD: 47
+Socket closed FD: 46
+TimerFd closed FD: 51
+Epoll closed FD: 50
+Socket closed FD: 49
+TimerFd closed FD: 54
+Epoll closed FD: 53
+Socket closed FD: 52
+TimerFd closed FD: 57
+Epoll closed FD: 56
+Socket closed FD: 55
+TimerFd closed FD: 60
+Epoll closed FD: 59
+Socket closed FD: 58
+TimerFd closed FD: 63
+Epoll closed FD: 62
+Socket closed FD: 61
+TimerFd closed FD: 66
+Epoll closed FD: 65
+Socket closed FD: 64

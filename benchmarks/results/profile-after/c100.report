@@ -1,0 +1,549 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 12K of event 'cycles:u'
+# Event count (approx.): 30539969821
+#
+# Overhead  Command  Shared Object        Symbol                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+# ........  .......  ...................  ..........................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+#
+     7.59%  aorta    aorta                [.] HttpParser::parse(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+            |          
+            |--1.61%--parse (inlined)
+            |          |          
+            |           --1.53%--Reactor::handleClient(int)
+            |                     Reactor::handleEvent(epoll_event&)
+            |                     Reactor::run(int)
+            |                     0x7f275a0ea859
+            |                     0x7f2759c980a2
+            |                     0x7f2759d2080c
+            |          
+             --1.36%--copy (inlined)
+                       |          
+                       |--0.80%--_S_copy (inlined)
+                       |          _S_copy (inlined)
+                       |          |          
+                       |           --0.51%--_S_copy_chars<char const*> (inlined)
+                       |                     _M_construct<char const*> (inlined)
+                       |          
+                        --0.55%--basic_string (inlined)
+                                  pair (inlined)
+                                  construct_at<std::pair<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > (inlined)
+                                  construct<std::pair<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > (inlined)
+                                  _M_realloc_append<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > (inlined)
+                                  emplace_back<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > (inlined)
+                                  push_back (inlined)
+                                  parse (inlined)
+                                  Reactor::handleClient(int)
+                                  Reactor::handleEvent(epoll_event&)
+                                  Reactor::run(int)
+                                  0x7f275a0ea859
+                                  0x7f2759c980a2
+                                  0x7f2759d2080c
+
+     4.70%  aorta    aorta                [.] HttpResponse::serialize[abi:cxx11]() const
+            |          
+            |--0.73%--__to_chars_10_impl<unsigned int> (inlined)
+            |          operator() (inlined)
+            |          __resize_and_overwrite<std::__cxx11::to_string(int)::<lambda(char*, std::size_t)> > (inlined)
+            |          to_string (inlined)
+            |          serialize (inlined)
+            |          Reactor::handleClient(int)
+            |          Reactor::handleEvent(epoll_event&)
+            |          Reactor::run(int)
+            |          0x7f275a0ea859
+            |          0x7f2759c980a2
+            |          0x7f2759d2080c
+            |          
+            |--0.64%--serialize (inlined)
+            |          |          
+            |           --0.62%--Reactor::handleClient(int)
+            |                     Reactor::handleEvent(epoll_event&)
+            |                     Reactor::run(int)
+            |                     0x7f275a0ea859
+            |                     0x7f2759c980a2
+            |                     0x7f2759d2080c
+            |          
+            |--0.61%--_M_append (inlined)
+            |          append (inlined)
+            |          
+             --0.52%--_M_check_length (inlined)
+                       append (inlined)
+
+     4.02%  aorta    aorta                [.] HttpResponse::setHeader(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+            |          
+            |--1.55%--copy (inlined)
+            |          |          
+            |           --1.22%--basic_string (inlined)
+            |                     pair (inlined)
+            |                     construct_at<std::pair<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > (inlined)
+            |                     construct<std::pair<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > (inlined)
+            |                     emplace_back<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > (inlined)
+            |                     push_back (inlined)
+            |                     setHeader (inlined)
+            |                     _M_data (inlined)
+            |                     _M_is_local (inlined)
+            |                     _M_dispose (inlined)
+            |                     ~basic_string (inlined)
+            |                     |          
+            |                      --0.88%--setContentType (inlined)
+            |                                _M_data (inlined)
+            |                                _M_is_local (inlined)
+            |                                _M_dispose (inlined)
+            |                                ~basic_string (inlined)
+            |                                handleGetHello (inlined)
+            |                                route (inlined)
+            |                                handle (inlined)
+            |                                Reactor::handleClient(int)
+            |                                Reactor::handleEvent(epoll_event&)
+            |                                Reactor::run(int)
+            |                                0x7f275a0ea859
+            |                                0x7f2759c980a2
+            |                                0x7f2759d2080c
+            |          
+             --0.88%--setHeader (inlined)
+                       _M_data (inlined)
+                       _M_is_local (inlined)
+                       _M_dispose (inlined)
+                       ~basic_string (inlined)
+
+     3.73%  aorta    libc.so.6            [.] malloc
+            |          
+            |--2.05%--__libc_malloc (inlined)
+            |          
+             --1.43%--tcache_get_n (inlined)
+                       tcache_get (inlined)
+                       __libc_malloc (inlined)
+
+     3.25%  aorta    [vdso]               [.] __vdso_clock_gettime
+            |
+            ---__vdso_clock_gettime
+               |          
+                --3.19%--__clock_gettime (inlined)
+                          __cast<long int, std::ratio<1> > (inlined)
+                          duration_cast<std::chrono::duration<long int, std::ratio<1, 1000000000> >, long int, std::ratio<1> > (inlined)
+                          duration<long int, std::ratio<1> > (inlined)
+                          operator+<long int, std::ratio<1>, long int, std::ratio<1, 1000000000> > (inlined)
+                          now (inlined)
+                          |          
+                          |--1.15%--Reactor::handleClient(int)
+                          |          Reactor::handleEvent(epoll_event&)
+                          |          Reactor::run(int)
+                          |          0x7f275a0ea859
+                          |          0x7f2759c980a2
+                          |          0x7f2759d2080c
+                          |          
+                          |--1.10%--std::common_type<std::chrono::duration<long, std::ratio<1l, 1000000000l> >, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >::type std::chrono::operator-<long, std::ratio<1l, 1000000000l>, long, std::ratio<1l, 1000000000l> >(std::chrono::duration<long, std::ratio<1l, 1000000000l> > const&, std::chrono::duration<long, std::ratio<1l, 1000000000l> > const&) (inlined)
+                          |          std::common_type<std::chrono::duration<long, std::ratio<1l, 1000000000l> >, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >::type std::chrono::operator-<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> >, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&) (inlined)
+                          |          Reactor::handleClient(int)
+                          |          Reactor::handleEvent(epoll_event&)
+                          |          Reactor::run(int)
+                          |          0x7f275a0ea859
+                          |          0x7f2759c980a2
+                          |          0x7f2759d2080c
+                          |          
+                           --0.93%--std::common_type<std::chrono::duration<long, std::ratio<1l, 1000000000l> >, std::chrono::duration<long, std::ratio<1l, 1l> > >::type std::chrono::operator+<long, std::ratio<1l, 1000000000l>, long, std::ratio<1l, 1l> >(std::chrono::duration<long, std::ratio<1l, 1000000000l> > const&, std::chrono::duration<long, std::ratio<1l, 1l> > const&) (inlined)
+                                     std::chrono::time_point<std::chrono::_V2::steady_clock, std::common_type<std::chrono::duration<long, std::ratio<1l, 1000000000l> >, std::chrono::duration<long, std::ratio<1l, 1l> > >::type> std::chrono::operator+<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> >, long, std::ratio<1l, 1l> >(std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&, std::chrono::duration<long, std::ratio<1l, 1l> > const&) (inlined)
+                                     Reactor::refreshDeadline(int, int) (inlined)
+                                     Reactor::handleClient(int)
+                                     Reactor::handleEvent(epoll_event&)
+                                     Reactor::run(int)
+                                     0x7f275a0ea859
+                                     0x7f2759c980a2
+                                     0x7f2759d2080c
+
+     2.72%  aorta    aorta                [.] HttpParser::reset()
+            |          
+            |--0.82%--_M_is_local (inlined)
+            |          |          
+            |           --0.52%--operator= (inlined)
+            |                     operator= (inlined)
+            |                     reset (inlined)
+            |                     Reactor::handleClient(int)
+            |                     Reactor::handleEvent(epoll_event&)
+            |                     Reactor::run(int)
+            |                     0x7f275a0ea859
+            |                     0x7f2759c980a2
+            |                     0x7f2759d2080c
+            |          
+             --0.59%--_M_data (inlined)
+
+     2.72%  aorta    libc.so.6            [.] cfree
+            |          
+             --2.55%--__libc_free (inlined)
+                       |          
+                       |--1.09%--Reactor::handleClient(int)
+                       |          Reactor::handleEvent(epoll_event&)
+                       |          Reactor::run(int)
+                       |          0x7f275a0ea859
+                       |          0x7f2759c980a2
+                       |          0x7f2759d2080c
+                       |          
+                        --1.05%--Reactor::handleEvent(epoll_event&)
+                                  Reactor::run(int)
+                                  0x7f275a0ea859
+                                  0x7f2759c980a2
+                                  0x7f2759d2080c
+
+     2.62%  aorta    aorta                [.] Reactor::handleClient(int)
+            |          
+            |--1.39%--Reactor::handleClient(int)
+            |          |          
+            |           --1.33%--Reactor::handleEvent(epoll_event&)
+            |                     Reactor::run(int)
+            |                     0x7f275a0ea859
+            |                     0x7f2759c980a2
+            |                     0x7f2759d2080c
+            |          
+             --0.59%--std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_is_local() const (inlined)
+                       std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_dispose() (inlined)
+                       std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::~basic_string() (inlined)
+
+     2.41%  aorta    libc.so.6            [.] tolower
+            |
+            ---tolower
+               |          
+               |--1.31%--Reactor::handleClient(int)
+               |          Reactor::handleEvent(epoll_event&)
+               |          Reactor::run(int)
+               |          0x7f275a0ea859
+               |          0x7f2759c980a2
+               |          0x7f2759d2080c
+               |          
+                --1.10%--tolower
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     2.27%  aorta    aorta                [.] HttpResponse::setContentLength(unsigned long)
+            |          
+             --1.35%--__to_chars_10_impl<long unsigned int> (inlined)
+                       operator() (inlined)
+                       __resize_and_overwrite<std::__cxx11::to_string(long unsigned int)::<lambda(char*, std::size_t)> > (inlined)
+                       to_string (inlined)
+                       setContentLength (inlined)
+                       route (inlined)
+                       handle (inlined)
+                       Reactor::handleClient(int)
+                       Reactor::handleEvent(epoll_event&)
+                       Reactor::run(int)
+                       0x7f275a0ea859
+                       0x7f2759c980a2
+                       0x7f2759d2080c
+
+     1.58%  aorta    aorta                [.] HttpRequest::HttpRequest(HttpRequest const&)
+     1.40%  aorta    [unknown]            [k] 0xffffffffa3b111f6
+            |
+            ---0xffffffffa3b111f6
+               |          
+                --0.85%--0xffffffffa470124b
+                          0xffffffffa4701354
+                          0xffffffffa4a83afa
+                          0xffffffffa320012f
+                          0x7f2759ca0952
+                          Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     1.28%  aorta    aorta                [.] Metrics::recordLatency(unsigned long)
+            |          
+             --0.52%--std::__atomic_base<unsigned long>::load(std::memory_order) const (inlined)
+                       Metrics::recordLatency(unsigned long)
+                       Reactor::handleEvent(epoll_event&)
+                       Reactor::run(int)
+                       0x7f275a0ea859
+                       0x7f2759c980a2
+                       0x7f2759d2080c
+
+     1.27%  aorta    aorta                [.] Metrics::incrementRequests()
+            |
+            ---Metrics::incrementRequests()
+               Reactor::handleEvent(epoll_event&)
+               Reactor::run(int)
+               0x7f275a0ea859
+               0x7f2759c980a2
+               0x7f2759d2080c
+
+     1.24%  aorta    libc.so.6            [.] isalnum
+            |
+            ---isalnum
+               parse (inlined)
+               Reactor::handleClient(int)
+               Reactor::handleEvent(epoll_event&)
+               Reactor::run(int)
+               0x7f275a0ea859
+               0x7f2759c980a2
+               0x7f2759d2080c
+
+     1.21%  aorta    [unknown]            [k] 0xffffffffa320008f
+            |
+            ---0xffffffffa320008f
+               |          
+                --1.21%--0x7f2759ca0952
+                          |          
+                           --0.71%--Connection::read()
+                                     Reactor::handleClient(int)
+                                     Reactor::handleEvent(epoll_event&)
+                                     Reactor::run(int)
+                                     0x7f275a0ea859
+                                     0x7f2759c980a2
+                                     0x7f2759d2080c
+
+     1.15%  aorta    [unknown]            [k] 0xffffffffa3b1117a
+            |
+            ---0xffffffffa3b1117a
+               |          
+                --0.73%--0xffffffffa470124b
+                          0xffffffffa4701354
+                          0xffffffffa4a83afa
+                          0xffffffffa320012f
+                          0x7f2759ca0952
+                          Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     1.09%  aorta    [unknown]            [k] 0xffffffffa3b111cf
+            |
+            ---0xffffffffa3b111cf
+               |          
+                --0.65%--0xffffffffa470124b
+                          0xffffffffa4701354
+                          0xffffffffa4a83afa
+                          0xffffffffa320012f
+                          0x7f2759ca0952
+                          Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     1.09%  aorta    [unknown]            [k] 0xffffffffa3b111e8
+            |
+            ---0xffffffffa3b111e8
+               |          
+                --0.79%--0xffffffffa470124b
+                          0xffffffffa4701354
+                          0xffffffffa4a83afa
+                          0xffffffffa320012f
+                          0x7f2759ca0952
+                          Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     1.06%  aorta    [unknown]            [k] 0xffffffffa3200116
+            |
+            ---0xffffffffa3200116
+               0x7f2759ca0952
+               |          
+                --0.94%--Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     1.00%  aorta    libc.so.6            [.] 0x0000000000176485
+            |
+            ---0x7f2759d76485
+               |          
+                --0.67%--Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     0.98%  aorta    libstdc++.so.6.0.36  [.] operator new(unsigned long)
+            |
+            ---operator new (inlined)
+
+     0.89%  aorta    aorta                [.] Connection::queueResponse(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+     0.89%  aorta    aorta                [.] std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::append(char const*) [clone .isra.0]
+     0.87%  aorta    aorta                [.] std::_Hashtable<int, std::pair<int const, Reactor::ConnectionState>, std::allocator<std::pair<int const, Reactor::ConnectionState> >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::find(int const&)
+     0.84%  aorta    [unknown]            [k] 0xffffffffa3200084
+            |
+            ---0xffffffffa3200084
+               |          
+                --0.84%--0x7f2759ca0952
+                          |          
+                           --0.63%--Connection::read()
+                                     Reactor::handleClient(int)
+                                     Reactor::handleEvent(epoll_event&)
+                                     Reactor::run(int)
+                                     0x7f275a0ea859
+                                     0x7f2759c980a2
+                                     0x7f2759d2080c
+
+     0.77%  aorta    libc.so.6            [.] 0x0000000000176400
+            |
+            ---0x7f2759d76400
+               |          
+                --0.57%--Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     0.76%  aorta    libc.so.6            [.] 0x00000000001791a1
+            |
+            ---0x7f2759d791a1
+               |          
+                --0.50%--serialize (inlined)
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     0.74%  aorta    aorta                [.] HttpHandler::handleGetHello(HttpRequest const&, HttpResponse&)
+     0.72%  aorta    [unknown]            [k] 0xffffffffa4a83a85
+            |
+            ---0xffffffffa4a83a85
+               0xffffffffa320012f
+               0x7f2759ca0952
+               |          
+                --0.64%--Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     0.72%  aorta    libc.so.6            [.] recv
+     0.71%  aorta    aorta                [.] HttpHandler::handle(HttpRequest const&, HttpResponse&, std::function<void (HttpResponse)>)
+     0.71%  aorta    [unknown]            [k] 0xffffffffa3b11178
+            |
+            ---0xffffffffa3b11178
+
+     0.71%  aorta    aorta                [.] Connection::consumeParsedBytes()
+     0.70%  aorta    aorta                [.] HttpRouter::route(HttpRequest const&, HttpResponse&)
+     0.69%  aorta    aorta                [.] HttpRequest::hasHeaderToken(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const
+            |          
+             --0.55%--HttpRequest::hasHeaderToken(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const
+                       |          
+                        --0.50%--std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_data() const (inlined)
+                                  std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_is_local() const (inlined)
+                                  std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_dispose() (inlined)
+                                  std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::~basic_string() (inlined)
+                                  Reactor::handleClient(int)
+                                  Reactor::handleEvent(epoll_event&)
+                                  Reactor::run(int)
+                                  0x7f275a0ea859
+                                  0x7f2759c980a2
+                                  0x7f2759d2080c
+
+     0.66%  aorta    libc.so.6            [.] 0x0000000000175a28
+            |
+            ---0x7f2759d75a28
+               Reactor::handleClient(int)
+               Reactor::handleEvent(epoll_event&)
+               Reactor::run(int)
+               0x7f275a0ea859
+               0x7f2759c980a2
+               0x7f2759d2080c
+
+     0.66%  aorta    [unknown]            [k] 0xffffffffa3200080
+            |
+            ---0xffffffffa3200080
+               |          
+                --0.65%--0x7f2759ca0952
+                          |          
+                           --0.50%--Connection::read()
+                                     Reactor::handleClient(int)
+                                     Reactor::handleEvent(epoll_event&)
+                                     Reactor::run(int)
+                                     0x7f275a0ea859
+                                     0x7f2759c980a2
+                                     0x7f2759d2080c
+
+     0.63%  aorta    [unknown]            [k] 0xffffffffa48b0672
+            |
+            ---0xffffffffa48b0672
+               0xffffffffa46f9e47
+               0xffffffffa470128f
+               0xffffffffa4701354
+               0xffffffffa4a83afa
+               0xffffffffa320012f
+               0x7f2759ca0952
+               Connection::read()
+               Reactor::handleClient(int)
+               Reactor::handleEvent(epoll_event&)
+               Reactor::run(int)
+               0x7f275a0ea859
+               0x7f2759c980a2
+               0x7f2759d2080c
+
+     0.62%  aorta    libstdc++.so.6.0.36  [.] std::chrono::_V2::steady_clock::now()
+            |          
+             --0.61%--now (inlined)
+
+     0.61%  aorta    [unknown]            [k] 0xffffffffa48b066e
+            |
+            ---0xffffffffa48b066e
+               0xffffffffa46f9e47
+               0xffffffffa470128f
+               0xffffffffa4701354
+               0xffffffffa4a83afa
+               0xffffffffa320012f
+               0x7f2759ca0952
+               Connection::read()
+               Reactor::handleClient(int)
+               Reactor::handleEvent(epoll_event&)
+               Reactor::run(int)
+               0x7f275a0ea859
+               0x7f2759c980a2
+               0x7f2759d2080c
+
+     0.60%  aorta    [unknown]            [k] 0xffffffffa46f9dfc
+            |
+            ---0xffffffffa46f9dfc
+               0xffffffffa470128f
+               0xffffffffa4701354
+               0xffffffffa4a83afa
+               0xffffffffa320012f
+               0x7f2759ca0952
+               Connection::read()
+               Reactor::handleClient(int)
+               Reactor::handleEvent(epoll_event&)
+               Reactor::run(int)
+               0x7f275a0ea859
+               0x7f2759c980a2
+               0x7f2759d2080c
+
+     0.56%  aorta    [unknown]            [k] 0xffffffffa34c4be4
+            |
+            ---0xffffffffa34c4be4
+               0xffffffffa4a83afa
+               0xffffffffa320012f
+               0x7f2759ca0952
+
+     0.54%  aorta    aorta                [.] HttpParser::isValidHeaderName(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+     0.52%  aorta    aorta                [.] HttpResponse::HttpResponse()
+
+
+#
+# (Tip: To browse sample contexts use perf report --sample 10 and select in context menu)
+#

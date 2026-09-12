@@ -26,6 +26,7 @@ private:
         std::uint64_t generation{0};
         bool request_in_flight{false};
         bool redis_pending{false};
+        uint32_t current_events{EPOLLIN | EPOLLRDHUP};
     };
 
     int id;

@@ -1,0 +1,498 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 9K of event 'cycles:u'
+# Event count (approx.): 31070012644
+#
+# Overhead  Command  Shared Object        Symbol                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+# ........  .......  ...................  ..........................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+#
+    13.62%  aorta    aorta                [.] HttpParser::parse(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+            |          
+            |--5.11%--parse (inlined)
+            |          |          
+            |           --4.99%--Reactor::handleClient(int)
+            |                     Reactor::handleEvent(epoll_event&)
+            |                     Reactor::run(int)
+            |                     0x7f275a0ea859
+            |                     0x7f2759c980a2
+            |                     0x7f2759d2080c
+            |          
+            |--2.71%--_M_local_data (inlined)
+            |          _M_is_local (inlined)
+            |          operator= (inlined)
+            |          parse (inlined)
+            |          Reactor::handleClient(int)
+            |          Reactor::handleEvent(epoll_event&)
+            |          Reactor::run(int)
+            |          0x7f275a0ea859
+            |          0x7f2759c980a2
+            |          0x7f2759d2080c
+            |          
+            |--1.56%--find (inlined)
+            |          |          
+            |           --1.52%--find (inlined)
+            |                     parse (inlined)
+            |                     Reactor::handleClient(int)
+            |                     Reactor::handleEvent(epoll_event&)
+            |                     Reactor::run(int)
+            |                     0x7f275a0ea859
+            |                     0x7f2759c980a2
+            |                     0x7f2759d2080c
+            |          
+            |--0.87%--operator==<char, std::char_traits<char>, std::allocator<char> > (inlined)
+            |          parse (inlined)
+            |          Reactor::handleClient(int)
+            |          Reactor::handleEvent(epoll_event&)
+            |          Reactor::run(int)
+            |          0x7f275a0ea859
+            |          0x7f2759c980a2
+            |          0x7f2759d2080c
+            |          
+             --0.76%--copy (inlined)
+
+     7.96%  aorta    aorta                [.] std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::find(int const&)
+            |          
+            |--4.91%--std::__detail::_Hash_node_base* std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_find_before_node_tr<int>(unsigned long, int const&, unsigned long) const (inlined)
+            |          std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::__location_type std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_locate_tr<int>(int const&) const (inlined)
+            |          std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_locate(int const&) const (inlined)
+            |          std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::find(int const&)
+            |          |          
+            |           --4.90%--Reactor::handleEvent(epoll_event&)
+            |                     Reactor::run(int)
+            |                     0x7f275a0ea859
+            |                     0x7f2759c980a2
+            |                     0x7f2759d2080c
+            |          
+            |--2.31%--std::equal_to<int>::operator()(int const&, int const&) const (inlined)
+            |          bool std::__detail::_Hashtable_base<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Hashtable_traits<false, false, true> >::_M_key_equals_tr<int>(int const&, std::__detail::_Hash_node_value<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, false> const&) const (inlined)
+            |          bool std::__detail::_Hashtable_base<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Hashtable_traits<false, false, true> >::_M_equals_tr<int>(int const&, unsigned long, std::__detail::_Hash_node_value<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, false> const&) const (inlined)
+            |          std::__detail::_Hash_node_base* std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_find_before_node_tr<int>(unsigned long, int const&, unsigned long) const (inlined)
+            |          std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::__location_type std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_locate_tr<int>(int const&) const (inlined)
+            |          std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_locate(int const&) const (inlined)
+            |          std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::find(int const&)
+            |          |          
+            |           --2.31%--Reactor::handleEvent(epoll_event&)
+            |                     Reactor::run(int)
+            |                     0x7f275a0ea859
+            |                     0x7f2759c980a2
+            |                     0x7f2759d2080c
+            |          
+             --0.70%--std::__detail::_Mod_range_hashing::operator()(unsigned long, unsigned long) const (inlined)
+                       std::__detail::_Hash_code_base<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::__detail::_Select1st, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, false>::_M_bucket_index(unsigned long, unsigned long) const (inlined)
+                       std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_bucket_index(unsigned long) const (inlined)
+                       std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::__location_type std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_locate_tr<int>(int const&) const (inlined)
+                       std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_locate(int const&) const (inlined)
+                       std::_Hashtable<int, std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > >, std::allocator<std::pair<int const, std::unique_ptr<Connection, std::default_delete<Connection> > > >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::find(int const&)
+                       |          
+                        --0.67%--Reactor::handleEvent(epoll_event&)
+                                  Reactor::run(int)
+                                  0x7f275a0ea859
+                                  0x7f2759c980a2
+                                  0x7f2759d2080c
+
+     4.97%  aorta    aorta                [.] HttpParser::reset()
+            |          
+            |--2.32%--_Alloc_hider (inlined)
+            |          basic_string (inlined)
+            |          reset (inlined)
+            |          Reactor::handleClient(int)
+            |          Reactor::handleEvent(epoll_event&)
+            |          Reactor::run(int)
+            |          0x7f275a0ea859
+            |          0x7f2759c980a2
+            |          0x7f2759d2080c
+            |          
+            |--0.96%--reset (inlined)
+            |          
+             --0.58%--_M_is_local (inlined)
+
+     3.69%  aorta    libc.so.6            [.] malloc
+            |          
+            |--1.91%--__libc_malloc (inlined)
+            |          |          
+            |           --0.96%--_M_capacity (inlined)
+            |                     |          
+            |                      --0.78%--_M_construct<char const*> (inlined)
+            |                                basic_string (inlined)
+            |                                substr (inlined)
+            |                                parse (inlined)
+            |                                Reactor::handleClient(int)
+            |                                Reactor::handleEvent(epoll_event&)
+            |                                Reactor::run(int)
+            |                                0x7f275a0ea859
+            |                                0x7f2759c980a2
+            |                                0x7f2759d2080c
+            |          
+             --1.65%--tcache_get_n (inlined)
+                       tcache_get (inlined)
+                       __libc_malloc (inlined)
+
+     3.60%  aorta    aorta                [.] Connection::read()
+            |          
+             --3.55%--Connection::read()
+                       |          
+                        --3.43%--Reactor::handleClient(int)
+                                  Reactor::handleEvent(epoll_event&)
+                                  Reactor::run(int)
+                                  0x7f275a0ea859
+                                  0x7f2759c980a2
+                                  0x7f2759d2080c
+
+     2.89%  aorta    aorta                [.] HttpResponse::serialize[abi:cxx11]() const
+            |          
+             --0.65%--_M_check_length (inlined)
+                       append (inlined)
+
+     2.66%  aorta    [vdso]               [.] __vdso_clock_gettime
+            |
+            ---__vdso_clock_gettime
+               |          
+                --2.61%--__clock_gettime (inlined)
+                          __cast<long int, std::ratio<1> > (inlined)
+                          duration_cast<std::chrono::duration<long int, std::ratio<1, 1000000000> >, long int, std::ratio<1> > (inlined)
+                          duration<long int, std::ratio<1> > (inlined)
+                          operator+<long int, std::ratio<1>, long int, std::ratio<1, 1000000000> > (inlined)
+                          now (inlined)
+                          |          
+                          |--0.97%--std::common_type<std::chrono::duration<long, std::ratio<1l, 1000000000l> >, std::chrono::duration<long, std::ratio<1l, 1l> > >::type std::chrono::operator+<long, std::ratio<1l, 1000000000l>, long, std::ratio<1l, 1l> >(std::chrono::duration<long, std::ratio<1l, 1000000000l> > const&, std::chrono::duration<long, std::ratio<1l, 1l> > const&) (inlined)
+                          |          std::chrono::time_point<std::chrono::_V2::steady_clock, std::common_type<std::chrono::duration<long, std::ratio<1l, 1000000000l> >, std::chrono::duration<long, std::ratio<1l, 1l> > >::type> std::chrono::operator+<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> >, long, std::ratio<1l, 1l> >(std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&, std::chrono::duration<long, std::ratio<1l, 1l> > const&) (inlined)
+                          |          Reactor::refreshDeadline(int, int) (inlined)
+                          |          Reactor::handleClient(int)
+                          |          Reactor::handleEvent(epoll_event&)
+                          |          Reactor::run(int)
+                          |          0x7f275a0ea859
+                          |          0x7f2759c980a2
+                          |          0x7f2759d2080c
+                          |          
+                          |--0.85%--std::common_type<std::chrono::duration<long, std::ratio<1l, 1000000000l> >, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >::type std::chrono::operator-<long, std::ratio<1l, 1000000000l>, long, std::ratio<1l, 1000000000l> >(std::chrono::duration<long, std::ratio<1l, 1000000000l> > const&, std::chrono::duration<long, std::ratio<1l, 1000000000l> > const&) (inlined)
+                          |          std::common_type<std::chrono::duration<long, std::ratio<1l, 1000000000l> >, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >::type std::chrono::operator-<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> >, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >(std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&, std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > const&) (inlined)
+                          |          Reactor::handleClient(int)
+                          |          Reactor::handleEvent(epoll_event&)
+                          |          Reactor::run(int)
+                          |          0x7f275a0ea859
+                          |          0x7f2759c980a2
+                          |          0x7f2759d2080c
+                          |          
+                           --0.79%--Reactor::handleClient(int)
+                                     Reactor::handleEvent(epoll_event&)
+                                     Reactor::run(int)
+                                     0x7f275a0ea859
+                                     0x7f2759c980a2
+                                     0x7f2759d2080c
+
+     2.61%  aorta    aorta                [.] HttpResponse::setHeader(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+            |          
+             --0.97%--copy (inlined)
+                       |          
+                        --0.64%--basic_string (inlined)
+                                  pair (inlined)
+                                  construct_at<std::pair<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > (inlined)
+                                  construct<std::pair<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > (inlined)
+                                  emplace_back<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > (inlined)
+                                  push_back (inlined)
+                                  setHeader (inlined)
+                                  _M_data (inlined)
+                                  _M_is_local (inlined)
+                                  _M_dispose (inlined)
+                                  ~basic_string (inlined)
+
+     2.36%  aorta    aorta                [.] Reactor::handleClient(int)
+            |          
+             --1.30%--Reactor::handleClient(int)
+                       |          
+                        --1.23%--Reactor::handleEvent(epoll_event&)
+                                  Reactor::run(int)
+                                  0x7f275a0ea859
+                                  0x7f2759c980a2
+                                  0x7f2759d2080c
+
+     2.07%  aorta    aorta                [.] Connection::OutputBuffer& std::deque<Connection::OutputBuffer, std::allocator<Connection::OutputBuffer> >::emplace_back<Connection::OutputBuffer>(Connection::OutputBuffer&&) [clone .isra.0]
+            |          
+             --1.59%--Connection::OutputBuffer& std::deque<Connection::OutputBuffer, std::allocator<Connection::OutputBuffer> >::emplace_back<Connection::OutputBuffer>(Connection::OutputBuffer&&) (inlined)
+                       std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_data() const (inlined)
+                       std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_is_local() const (inlined)
+                       std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_dispose() (inlined)
+                       std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::~basic_string() (inlined)
+                       Reactor::handleClient(int)
+                       Reactor::handleEvent(epoll_event&)
+                       Reactor::run(int)
+                       0x7f275a0ea859
+                       0x7f2759c980a2
+                       0x7f2759d2080c
+
+     1.96%  aorta    aorta                [.] std::_Hashtable<int, std::pair<int const, Reactor::ConnectionState>, std::allocator<std::pair<int const, Reactor::ConnectionState> >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::find(int const&)
+            |          
+             --1.08%--std::__detail::_Hash_node_base* std::_Hashtable<int, std::pair<int const, Reactor::ConnectionState>, std::allocator<std::pair<int const, Reactor::ConnectionState> >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_find_before_node_tr<int>(unsigned long, int const&, unsigned long) const (inlined)
+                       std::_Hashtable<int, std::pair<int const, Reactor::ConnectionState>, std::allocator<std::pair<int const, Reactor::ConnectionState> >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::__location_type std::_Hashtable<int, std::pair<int const, Reactor::ConnectionState>, std::allocator<std::pair<int const, Reactor::ConnectionState> >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_locate_tr<int>(int const&) const (inlined)
+                       std::_Hashtable<int, std::pair<int const, Reactor::ConnectionState>, std::allocator<std::pair<int const, Reactor::ConnectionState> >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_locate(int const&) const (inlined)
+                       std::_Hashtable<int, std::pair<int const, Reactor::ConnectionState>, std::allocator<std::pair<int const, Reactor::ConnectionState> >, std::__detail::_Select1st, std::equal_to<int>, std::hash<int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::find(int const&)
+                       |          
+                        --1.08%--Reactor::handleEvent(epoll_event&)
+                                  Reactor::run(int)
+                                  0x7f275a0ea859
+                                  0x7f2759c980a2
+                                  0x7f2759d2080c
+
+     1.74%  aorta    libc.so.6            [.] cfree
+            |          
+             --1.58%--__libc_free (inlined)
+                       |          
+                       |--0.67%--Reactor::handleClient(int)
+                       |          Reactor::handleEvent(epoll_event&)
+                       |          Reactor::run(int)
+                       |          0x7f275a0ea859
+                       |          0x7f2759c980a2
+                       |          0x7f2759d2080c
+                       |          
+                        --0.61%--Reactor::handleEvent(epoll_event&)
+                                  Reactor::run(int)
+                                  0x7f275a0ea859
+                                  0x7f2759c980a2
+                                  0x7f2759d2080c
+
+     1.66%  aorta    libc.so.6            [.] tolower
+            |
+            ---tolower
+               |          
+               |--0.87%--Reactor::handleClient(int)
+               |          Reactor::handleEvent(epoll_event&)
+               |          Reactor::run(int)
+               |          0x7f275a0ea859
+               |          0x7f2759c980a2
+               |          0x7f2759d2080c
+               |          
+                --0.78%--tolower
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     1.55%  aorta    [unknown]            [k] 0xffffffffa3b111f6
+            |
+            ---0xffffffffa3b111f6
+               |          
+                --1.34%--0xffffffffa470124b
+                          0xffffffffa4701354
+                          0xffffffffa4a83afa
+                          0xffffffffa320012f
+                          0x7f2759ca0952
+                          Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     1.37%  aorta    aorta                [.] HttpResponse::setContentLength(unsigned long)
+            |          
+             --0.82%--__to_chars_10_impl<long unsigned int> (inlined)
+                       operator() (inlined)
+                       __resize_and_overwrite<std::__cxx11::to_string(long unsigned int)::<lambda(char*, std::size_t)> > (inlined)
+                       to_string (inlined)
+                       setContentLength (inlined)
+                       route (inlined)
+                       handle (inlined)
+                       Reactor::handleClient(int)
+                       Reactor::handleEvent(epoll_event&)
+                       Reactor::run(int)
+                       0x7f275a0ea859
+                       0x7f2759c980a2
+                       0x7f2759d2080c
+
+     1.15%  aorta    [unknown]            [k] 0xffffffffa3b111e8
+            |
+            ---0xffffffffa3b111e8
+               |          
+                --0.91%--0xffffffffa470124b
+                          0xffffffffa4701354
+                          0xffffffffa4a83afa
+                          0xffffffffa320012f
+                          0x7f2759ca0952
+                          Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     1.00%  aorta    aorta                [.] HttpRequest::HttpRequest(HttpRequest const&)
+     0.93%  aorta    [unknown]            [k] 0xffffffffa3200116
+            |
+            ---0xffffffffa3200116
+               0x7f2759ca0952
+               |          
+                --0.85%--Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     0.92%  aorta    libstdc++.so.6.0.36  [.] operator new(unsigned long)
+            |
+            ---operator new (inlined)
+
+     0.87%  aorta    [unknown]            [k] 0xffffffffa3200084
+            |
+            ---0xffffffffa3200084
+               |          
+                --0.87%--0x7f2759ca0952
+                          |          
+                           --0.73%--Connection::read()
+                                     Reactor::handleClient(int)
+                                     Reactor::handleEvent(epoll_event&)
+                                     Reactor::run(int)
+                                     0x7f275a0ea859
+                                     0x7f2759c980a2
+                                     0x7f2759d2080c
+
+     0.83%  aorta    aorta                [.] HttpHandler::handle(HttpRequest const&, HttpResponse&, std::function<void (HttpResponse)>)
+     0.83%  aorta    libc.so.6            [.] isalnum
+            |
+            ---isalnum
+               parse (inlined)
+               Reactor::handleClient(int)
+               Reactor::handleEvent(epoll_event&)
+               Reactor::run(int)
+               0x7f275a0ea859
+               0x7f2759c980a2
+               0x7f2759d2080c
+
+     0.80%  aorta    aorta                [.] Metrics::incrementRequests()
+            |
+            ---Metrics::incrementRequests()
+               Reactor::handleEvent(epoll_event&)
+               Reactor::run(int)
+               0x7f275a0ea859
+               0x7f2759c980a2
+               0x7f2759d2080c
+
+     0.79%  aorta    libc.so.6            [.] 0x0000000000175a28
+            |
+            ---0x7f2759d75a28
+               Reactor::handleClient(int)
+               Reactor::handleEvent(epoll_event&)
+               Reactor::run(int)
+               0x7f275a0ea859
+               0x7f2759c980a2
+               0x7f2759d2080c
+
+     0.78%  aorta    aorta                [.] Metrics::recordLatency(unsigned long)
+     0.78%  aorta    aorta                [.] std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::append(char const*) [clone .isra.0]
+     0.75%  aorta    aorta                [.] Connection::queueResponse(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+            |          
+             --0.63%--Connection::queueResponse(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+                       |          
+                        --0.51%--std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_data() const (inlined)
+                                  std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_is_local() const (inlined)
+                                  std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_dispose() (inlined)
+                                  std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::~basic_string() (inlined)
+                                  Reactor::handleClient(int)
+                                  Reactor::handleEvent(epoll_event&)
+                                  Reactor::run(int)
+                                  0x7f275a0ea859
+                                  0x7f2759c980a2
+                                  0x7f2759d2080c
+
+     0.75%  aorta    [unknown]            [k] 0xffffffffa320008f
+            |
+            ---0xffffffffa320008f
+               |          
+                --0.75%--0x7f2759ca0952
+
+     0.75%  aorta    [unknown]            [k] 0xffffffffa3b1117a
+            |
+            ---0xffffffffa3b1117a
+               |          
+                --0.58%--0xffffffffa470124b
+                          0xffffffffa4701354
+                          0xffffffffa4a83afa
+                          0xffffffffa320012f
+                          0x7f2759ca0952
+                          Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     0.71%  aorta    aorta                [.] HttpRequest::hasHeaderToken(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const
+     0.67%  aorta    aorta                [.] Connection::shouldCloseAfterWrite() const
+            |
+            ---Connection::shouldCloseAfterWrite() const
+               |          
+                --0.67%--Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     0.65%  aorta    [unknown]            [k] 0xffffffffa46f9dfc
+            |
+            ---0xffffffffa46f9dfc
+               0xffffffffa470128f
+               0xffffffffa4701354
+               0xffffffffa4a83afa
+               0xffffffffa320012f
+               0x7f2759ca0952
+               Connection::read()
+               Reactor::handleClient(int)
+               Reactor::handleEvent(epoll_event&)
+               Reactor::run(int)
+               0x7f275a0ea859
+               0x7f2759c980a2
+               0x7f2759d2080c
+
+     0.65%  aorta    aorta                [.] HttpHandler::handleGetHello(HttpRequest const&, HttpResponse&)
+     0.63%  aorta    libc.so.6            [.] recv
+     0.61%  aorta    aorta                [.] Connection::consumeParsedBytes()
+     0.60%  aorta    [unknown]            [k] 0xffffffffa3b111cf
+            |
+            ---0xffffffffa3b111cf
+
+     0.59%  aorta    [unknown]            [k] 0xffffffffa3200080
+            |
+            ---0xffffffffa3200080
+               0x7f2759ca0952
+
+     0.57%  aorta    [unknown]            [k] 0xffffffffa4a83a85
+            |
+            ---0xffffffffa4a83a85
+               0xffffffffa320012f
+               0x7f2759ca0952
+               |          
+                --0.51%--Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+     0.54%  aorta    [unknown]            [k] 0xffffffffa3200125
+            |
+            ---0xffffffffa3200125
+               0x7f2759ca0952
+               |          
+                --0.52%--Connection::read()
+                          Reactor::handleClient(int)
+                          Reactor::handleEvent(epoll_event&)
+                          Reactor::run(int)
+                          0x7f275a0ea859
+                          0x7f2759c980a2
+                          0x7f2759d2080c
+
+
+
+#
+# (Tip: For parallelism histogram, try: perf report --hierarchy --sort latency,parallelism,comm,symbol)
+#

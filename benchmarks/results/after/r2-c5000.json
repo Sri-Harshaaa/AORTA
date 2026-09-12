@@ -1,0 +1,7 @@
+{
+  "elapsed": 15.169579330000488,
+  "server_cpu_seconds": 67.76,
+  "server_cpu_percent": 446.68344801093326,
+  "concurrency": 5000,
+  "repeat": 2
+}

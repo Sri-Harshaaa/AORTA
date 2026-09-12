@@ -1,0 +1,105 @@
+28132 epoll_ctl(20, EPOLL_CTL_ADD, 19, {events=EPOLLIN, data=0x559700000013}) = 0
+28132 epoll_ctl(20, EPOLL_CTL_ADD, 21, {events=EPOLLIN, data=0x559700000015}) = 0
+28132 epoll_ctl(20, EPOLL_CTL_ADD, 3, {events=EPOLLIN, data=0x559700000003}) = 0
+28133 epoll_ctl(23, EPOLL_CTL_ADD, 22, {events=EPOLLIN, data=0x559700000016}) = 0
+28133 epoll_ctl(23, EPOLL_CTL_ADD, 24, {events=EPOLLIN, data=0x559700000018}) = 0
+28133 epoll_ctl(23, EPOLL_CTL_ADD, 4, {events=EPOLLIN, data=0x559700000004}) = 0
+28135 epoll_ctl(29, EPOLL_CTL_ADD, 28, {events=EPOLLIN, data=0x55970000001c}) = 0
+28135 epoll_ctl(29, EPOLL_CTL_ADD, 30, {events=EPOLLIN, data=0x55970000001e}) = 0
+28135 epoll_ctl(29, EPOLL_CTL_ADD, 6, {events=EPOLLIN, data=0x559700000006}) = 0
+28134 epoll_ctl(26, EPOLL_CTL_ADD, 25, {events=EPOLLIN, data=0x559700000019}) = 0
+28134 epoll_ctl(26, EPOLL_CTL_ADD, 27, {events=EPOLLIN, data=0x55970000001b}) = 0
+28134 epoll_ctl(26, EPOLL_CTL_ADD, 5, {events=EPOLLIN, data=0x559700000005}) = 0
+28136 epoll_ctl(32, EPOLL_CTL_ADD, 31, {events=EPOLLIN, data=0x55970000001f}) = 0
+28136 epoll_ctl(32, EPOLL_CTL_ADD, 33, {events=EPOLLIN, data=0x559700000021}) = 0
+28136 epoll_ctl(32, EPOLL_CTL_ADD, 7, {events=EPOLLIN, data=0x559700000007}) = 0
+28137 epoll_ctl(35, EPOLL_CTL_ADD, 34, {events=EPOLLIN, data=0x559700000022}) = 0
+28137 epoll_ctl(35, EPOLL_CTL_ADD, 36, {events=EPOLLIN, data=0x559700000024}) = 0
+28137 epoll_ctl(35, EPOLL_CTL_ADD, 8, {events=EPOLLIN, data=0x559700000008}) = 0
+28138 epoll_ctl(38, EPOLL_CTL_ADD, 37, {events=EPOLLIN, data=0x559700000025}) = 0
+28138 epoll_ctl(38, EPOLL_CTL_ADD, 39, {events=EPOLLIN, data=0x559700000027}) = 0
+28138 epoll_ctl(38, EPOLL_CTL_ADD, 9, {events=EPOLLIN, data=0x559700000009}) = 0
+28139 epoll_ctl(41, EPOLL_CTL_ADD, 40, {events=EPOLLIN, data=0x559700000028}) = 0
+28139 epoll_ctl(41, EPOLL_CTL_ADD, 42, {events=EPOLLIN, data=0x55970000002a}) = 0
+28139 epoll_ctl(41, EPOLL_CTL_ADD, 10, {events=EPOLLIN, data=0x55970000000a}) = 0
+28140 epoll_ctl(44, EPOLL_CTL_ADD, 43, {events=EPOLLIN, data=0x55970000002b}) = 0
+28140 epoll_ctl(44, EPOLL_CTL_ADD, 45, {events=EPOLLIN, data=0x55970000002d}) = 0
+28140 epoll_ctl(44, EPOLL_CTL_ADD, 11, {events=EPOLLIN, data=0x55970000000b}) = 0
+28141 epoll_ctl(47, EPOLL_CTL_ADD, 46, {events=EPOLLIN, data=0x55970000002e}) = 0
+28141 epoll_ctl(47, EPOLL_CTL_ADD, 48, {events=EPOLLIN, data=0x559700000030}) = 0
+28141 epoll_ctl(47, EPOLL_CTL_ADD, 12, {events=EPOLLIN, data=0x55970000000c}) = 0
+28142 epoll_ctl(50, EPOLL_CTL_ADD, 49, {events=EPOLLIN, data=0x559700000031}) = 0
+28142 epoll_ctl(50, EPOLL_CTL_ADD, 51, {events=EPOLLIN, data=0x559700000033}) = 0
+28142 epoll_ctl(50, EPOLL_CTL_ADD, 13, {events=EPOLLIN, data=0x55970000000d}) = 0
+28143 epoll_ctl(53, EPOLL_CTL_ADD, 52, {events=EPOLLIN, data=0x559700000034}) = 0
+28143 epoll_ctl(53, EPOLL_CTL_ADD, 54, {events=EPOLLIN, data=0x559700000036}) = 0
+28143 epoll_ctl(53, EPOLL_CTL_ADD, 14, {events=EPOLLIN, data=0x55970000000e}) = 0
+28144 epoll_ctl(56, EPOLL_CTL_ADD, 55, {events=EPOLLIN, data=0x559700000037}) = 0
+28144 epoll_ctl(56, EPOLL_CTL_ADD, 57, {events=EPOLLIN, data=0x559700000039}) = 0
+28144 epoll_ctl(56, EPOLL_CTL_ADD, 15, {events=EPOLLIN, data=0x55970000000f}) = 0
+28145 epoll_ctl(59, EPOLL_CTL_ADD, 58, {events=EPOLLIN, data=0x55970000003a}) = 0
+28145 epoll_ctl(59, EPOLL_CTL_ADD, 60, {events=EPOLLIN, data=0x55970000003c}) = 0
+28145 epoll_ctl(59, EPOLL_CTL_ADD, 16, {events=EPOLLIN, data=0x559700000010}) = 0
+28146 epoll_ctl(62, EPOLL_CTL_ADD, 61, {events=EPOLLIN, data=0x55970000003d}) = 0
+28147 epoll_ctl(65, EPOLL_CTL_ADD, 64, {events=EPOLLIN, data=0x559700000040}) = 0
+28146 epoll_ctl(62, EPOLL_CTL_ADD, 63, {events=EPOLLIN, data=0x55970000003f}) = 0
+28146 epoll_ctl(62, EPOLL_CTL_ADD, 17, {events=EPOLLIN, data=0x559700000011} <unfinished ...>
+28147 epoll_ctl(65, EPOLL_CTL_ADD, 66, {events=EPOLLIN, data=0x559700000042} <unfinished ...>
+28146 <... epoll_ctl resumed>)          = 0
+28147 <... epoll_ctl resumed>)          = 0
+28147 epoll_ctl(65, EPOLL_CTL_ADD, 18, {events=EPOLLIN, data=0x559700000012}) = 0
+28138 epoll_ctl(38, EPOLL_CTL_ADD, 67, {events=EPOLLIN|EPOLLRDHUP, data=0x100000043}) = 0
+28138 epoll_ctl(38, EPOLL_CTL_DEL, 67, NULL) = 0
+28144 epoll_ctl(56, EPOLL_CTL_ADD, 67, {events=EPOLLIN|EPOLLRDHUP, data=0x100000043}) = 0
+28144 epoll_ctl(56, EPOLL_CTL_DEL, 67, NULL) = 0
+28143 epoll_ctl(53, EPOLL_CTL_ADD, 67, {events=EPOLLIN|EPOLLRDHUP, data=0x100000043}) = 0
+28143 epoll_ctl(53, EPOLL_CTL_DEL, 67, NULL) = 0
+28139 epoll_ctl(41, EPOLL_CTL_ADD, 67, {events=EPOLLIN|EPOLLRDHUP, data=0x100000043}) = 0
+28139 sendfile(67, 68, [0] => [2621440], 6291456) = 2621440
+28139 sendfile(67, 68, [2621440], 3670016) = -1 EAGAIN (Resource temporarily unavailable)
+28139 epoll_ctl(41, EPOLL_CTL_MOD, 67, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP, data=0x7ff400000043}) = 0
+28139 sendfile(67, 68, [2621440] => [3624960], 3670016) = 1003520
+28139 sendfile(67, 68, [3624960], 2666496) = -1 EAGAIN (Resource temporarily unavailable)
+28139 sendfile(67, 68, [3624960] => [4614144], 2666496) = 989184
+28139 sendfile(67, 68, [4614144], 1677312) = -1 EAGAIN (Resource temporarily unavailable)
+28139 sendfile(67, 68, [4614144] => [5603328], 1677312) = 989184
+28139 sendfile(67, 68, [5603328], 688128) = -1 EAGAIN (Resource temporarily unavailable)
+28139 sendfile(67, 68, [5603328] => [6291456], 688128) = 688128
+28139 epoll_ctl(41, EPOLL_CTL_MOD, 67, {events=EPOLLIN|EPOLLRDHUP, data=0x7ff400000043}) = 0
+28139 epoll_ctl(41, EPOLL_CTL_DEL, 67, NULL) = 0
+28147 epoll_ctl(65, EPOLL_CTL_ADD, 67, {events=EPOLLIN|EPOLLRDHUP, data=0x100000043}) = 0
+28147 epoll_ctl(65, EPOLL_CTL_MOD, 67, {events=EPOLLRDHUP, data=0x43}) = 0
+28147 epoll_ctl(65, EPOLL_CTL_MOD, 67, {events=EPOLLIN|EPOLLRDHUP, data=0x3537343700000043}) = 0
+28147 epoll_ctl(65, EPOLL_CTL_MOD, 67, {events=EPOLLRDHUP, data=0x43}) = 0
+28147 epoll_ctl(65, EPOLL_CTL_MOD, 67, {events=EPOLLIN|EPOLLRDHUP, data=0x3537343700000043}) = 0
+28147 epoll_ctl(65, EPOLL_CTL_MOD, 67, {events=EPOLLRDHUP, data=0x43}) = 0
+28147 epoll_ctl(65, EPOLL_CTL_MOD, 67, {events=EPOLLIN|EPOLLRDHUP, data=0x3537343700000043}) = 0
+28147 epoll_ctl(65, EPOLL_CTL_DEL, 67, NULL) = 0
+28147 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=28121, si_uid=1000} ---
+28147 +++ exited with 0 +++
+28132 +++ exited with 0 +++
+28133 +++ exited with 0 +++
+28135 +++ exited with 0 +++
+28134 +++ exited with 0 +++
+28136 +++ exited with 0 +++
+28137 +++ exited with 0 +++
+28138 +++ exited with 0 +++
+28139 +++ exited with 0 +++
+28140 +++ exited with 0 +++
+28141 +++ exited with 0 +++
+28142 +++ exited with 0 +++
+28143 +++ exited with 0 +++
+28144 +++ exited with 0 +++
+28145 +++ exited with 0 +++
+28146 +++ exited with 0 +++
+28130 +++ exited with 0 +++
+28129 +++ exited with 0 +++
+28128 +++ exited with 0 +++
+28127 +++ exited with 0 +++
+28126 +++ exited with 0 +++
+28125 +++ exited with 0 +++
+28124 +++ exited with 0 +++
+28123 +++ exited with 0 +++
+28122 +++ exited with 0 +++
+28121 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=28122, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+28121 +++ exited with 0 +++

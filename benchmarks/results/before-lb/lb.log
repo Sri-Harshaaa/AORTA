@@ -1,0 +1,53 @@
+Starting AORTA Load Balancer with 4 reactors
+Socket created FD: 3
+Epoll created FD: 4
+TimerFd created FD: 5
+Socket created FD: 6
+Epoll created FD: 7
+TimerFd created FD: 8
+Socket created FD: 9
+Epoll created FD: 11
+TimerFd created FD: 10
+Socket created FD: 12
+Epoll created FD: LB Reactor 13
+0TimerFd created FD: 15
+/4 loaded 1 backends
+LB Reactor 0 routing mode: round_robin
+LB Reactor 0 consistent hash ring contains 128 virtual nodes
+LB Reactor LB Reactor 1/24/ loaded 4 loaded 1 backends
+LB Reactor 2 routing mode: round_robin
+LB Reactor 2 consistent hash ring contains 128 virtual nodes
+1 backends
+LB Reactor 3/LB Reactor 1 routing mode: round_robin
+LB Reactor 1 consistent hash ring contains 128 virtual nodes
+4 loaded 1 backends
+LB Reactor 3 routing mode: round_robin
+LB Reactor 3 consistent hash ring contains 128 virtual nodes
+bind() successful
+bind() successfullisten() successful
+bind() successful
+listen() successful
+
+listen() successful
+LB Reactor 1 listening on port 9000
+bind() successful
+listen() successful
+LB Reactor 2 listening on port 9000
+LB Reactor 3 listening on port 9000
+LB Reactor 0 listening on port 9000
+LB Reactor 0 stopped
+TimerFd closed FD: 5
+Epoll closed FD: 4
+Socket closed FD: 3
+LB Reactor 3 stopped
+TimerFd closed FD: 15
+Epoll closed FD: 13
+Socket closed FD: 12
+LB Reactor 1 stopped
+TimerFd closed FD: 8
+Epoll closed FD: 7
+Socket closed FD: 6
+LB Reactor 2 stopped
+TimerFd closed FD: 10
+Epoll closed FD: 11
+Socket closed FD: 9

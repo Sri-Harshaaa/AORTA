@@ -1,0 +1,13 @@
+Running 10s test @ http://127.0.0.1:9000/hello
+  8 threads and 500 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.76ms  354.75us   9.07ms   69.12%
+    Req/Sec    22.58k   329.65    23.33k    69.88%
+  Latency Distribution
+     50%    2.77ms
+     75%    2.97ms
+     90%    3.18ms
+     99%    3.71ms
+  1797119 requests in 10.03s, 179.96MB read
+Requests/sec: 179263.13
+Transfer/sec:     17.95MB

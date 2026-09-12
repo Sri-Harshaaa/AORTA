@@ -1,0 +1,2 @@
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 1.213 MB benchmarks/results/profile-after/c5000.data (9991 samples) ]

@@ -1,0 +1,3 @@
+# Keep large native perf captures locally; text reports remain reviewable.
+*.data
+*.data.old

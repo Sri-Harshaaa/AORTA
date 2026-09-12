@@ -1,0 +1,114 @@
+[
+  {
+    "cpu": 0,
+    "user": 20.8,
+    "system": 52.33,
+    "softirq": 25.27,
+    "idle": 0.73
+  },
+  {
+    "cpu": 1,
+    "user": 20.6,
+    "system": 52.87,
+    "softirq": 24.8,
+    "idle": 0.8
+  },
+  {
+    "cpu": 2,
+    "user": 21.19,
+    "system": 52.3,
+    "softirq": 25.05,
+    "idle": 0.73
+  },
+  {
+    "cpu": 3,
+    "user": 22.73,
+    "system": 51.33,
+    "softirq": 24.0,
+    "idle": 0.73
+  },
+  {
+    "cpu": 4,
+    "user": 22.07,
+    "system": 51.87,
+    "softirq": 24.67,
+    "idle": 0.67
+  },
+  {
+    "cpu": 5,
+    "user": 21.32,
+    "system": 52.3,
+    "softirq": 24.92,
+    "idle": 0.73
+  },
+  {
+    "cpu": 6,
+    "user": 25.82,
+    "system": 50.03,
+    "softirq": 22.29,
+    "idle": 1.0
+  },
+  {
+    "cpu": 7,
+    "user": 20.99,
+    "system": 52.17,
+    "softirq": 24.98,
+    "idle": 1.0
+  },
+  {
+    "cpu": 8,
+    "user": 17.95,
+    "system": 55.5,
+    "softirq": 25.62,
+    "idle": 0.33
+  },
+  {
+    "cpu": 9,
+    "user": 17.27,
+    "system": 55.8,
+    "softirq": 26.07,
+    "idle": 0.2
+  },
+  {
+    "cpu": 10,
+    "user": 18.45,
+    "system": 54.96,
+    "softirq": 25.72,
+    "idle": 0.2
+  },
+  {
+    "cpu": 11,
+    "user": 17.8,
+    "system": 55.33,
+    "softirq": 25.8,
+    "idle": 0.4
+  },
+  {
+    "cpu": 12,
+    "user": 18.53,
+    "system": 55.13,
+    "softirq": 25.6,
+    "idle": 0.13
+  },
+  {
+    "cpu": 13,
+    "user": 18.71,
+    "system": 55.19,
+    "softirq": 25.1,
+    "idle": 0.33
+  },
+  {
+    "cpu": 14,
+    "user": 17.44,
+    "system": 55.53,
+    "softirq": 25.97,
+    "idle": 0.33
+  },
+  {
+    "cpu": 15,
+    "user": 16.87,
+    "system": 55.8,
+    "softirq": 26.2,
+    "idle": 0.47
+  }
+]

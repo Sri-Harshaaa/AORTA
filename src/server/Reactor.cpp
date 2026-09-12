@@ -114,14 +114,19 @@ void Reactor::updateEvents(
     int fd,
     uint32_t events
 ) {
-    if(connections.find(fd) == connections.end()) {
+    auto state = connection_states.find(fd);
+
+    if(state == connection_states.end() || state->second.current_events == events) {
         return;
     }
 
     if(!epoll.modify(fd, events)) {
         metrics.incrementErrors();
         removeConnection(fd);
+        return;
     }
+
+    state->second.current_events = events;
 }
 
 
@@ -408,10 +413,9 @@ void Reactor::handleClient(
     }
 
     if(connection.hasPendingOutput()) {
-        updateEvents(
-            fd,
-            EPOLLIN | EPOLLOUT | EPOLLRDHUP
-        );
+        // Most responses fit in the socket send buffer. Only wait for
+        // writable readiness when a nonblocking write actually stalls.
+        handleWrite(fd);
     }
 }
 
@@ -428,6 +432,11 @@ void Reactor::handleWrite(
     Connection& connection =
         *iterator->second;
 
+    // An EPOLLOUT event already in the batch may follow an inline flush.
+    if(!connection.hasPendingOutput()) {
+        return;
+    }
+
     const Connection::WriteResult result =
         connection.write();
 
@@ -438,6 +447,7 @@ void Reactor::handleWrite(
     }
 
     if(result == Connection::WriteResult::WouldBlock) {
+        updateEvents(fd, EPOLLIN | EPOLLOUT | EPOLLRDHUP);
         return;
     }
 
@@ -553,10 +563,7 @@ void Reactor::completeAsyncResponse(
         KEEP_ALIVE_TIMEOUT_SECONDS
     );
 
-    updateEvents(
-        fd,
-        EPOLLIN | EPOLLOUT | EPOLLRDHUP
-    );
+    handleWrite(fd);
 }
 
 
