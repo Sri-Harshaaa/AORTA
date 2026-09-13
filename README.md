@@ -1,324 +1,645 @@
 <div align="center">
 
-# ⚡ AORTA
+# 🫀 AORTA
+### **A Miniature Distributed System Built From Scratch**
 
-### A miniature distributed system built from the socket up.
-
-**Custom TCP Load Balancer · Event-Driven Servers · Worker Pool · Redis · Prometheus · Grafana**
+*A systems-focused project exploring Linux networking, concurrency, load balancing, persistence, observability, failure handling, and measurement-driven performance engineering.*
 
 <br>
 
-[![C++17](https://img.shields.io/badge/C%2B%2B-17-2563EB?style=for-the-badge&logo=cplusplus&logoColor=white)](#)
-[![Linux](https://img.shields.io/badge/Linux-epoll-FCC624?style=for-the-badge&logo=linux&logoColor=black)](#)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](#)
-[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)](#)
-[![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)](#)
-[![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white)](#)
+![C++](https://img.shields.io/badge/C%2B%2B-17-00599C?style=for-the-badge&logo=cplusplus&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-epoll-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)
+![Grafana](https://img.shields.io/badge/Grafana-Dashboard-F46800?style=for-the-badge&logo=grafana&logoColor=white)
+
+<br>
+
+**Custom L4 TCP Load Balancer · Multi-Reactor HTTP/1.1 Servers · Worker Pool · Redis · Prometheus · Grafana**
 
 </div>
 
 ---
 
-## 🎯 What is AORTA?
+## 🧠 What is AORTA?
 
-AORTA is a **systems-focused miniature distributed backend** built to explore the engineering behind modern infrastructure.
+AORTA is a **high-concurrency distributed server system** built to explore what happens underneath a modern backend stack instead of hiding networking and concurrency behind a framework.
 
-It combines a custom **Layer-4 TCP load balancer**, multiple **event-driven HTTP servers**, a **multi-reactor + worker-pool architecture**, **Redis-backed persistence**, and a **Prometheus + Grafana observability stack**.
+The project contains:
 
-The idea is simple:
+- a custom **Layer-4 TCP load balancer**
+- multi-reactor, event-driven **HTTP/1.1 servers**
+- Linux `epoll`, non-blocking sockets and `SO_REUSEPORT`
+- a custom incremental HTTP parser and router
+- asynchronous worker execution
+- Redis-backed task persistence
+- health checks and failover
+- Prometheus metrics and Grafana dashboards
+- reproducible benchmark, profiling and regression-test tooling
 
-> **Don't just use infrastructure. Build a small version of the interesting parts and understand what happens underneath.**
+The Task Manager is intentionally simple: it provides a real workload that can be served, persisted, distributed, monitored and stressed while the infrastructure remains the focus.
 
-```text
-                         🌐 Client
-                            │
-                            ▼
-                 ┌─────────────────────┐
-                 │   ⚡ AORTA LB        │
-                 │                     │
-                 │ Layer-4 TCP Proxy   │
-                 │ epoll / non-blocking│
-                 │ routing / failover  │
-                 └──────────┬──────────┘
-                            │
-                 ┌──────────┼──────────┐
-                 │          │          │
-                 ▼          ▼          ▼
-              🖥️ S1      🖥️ S2      🖥️ S3
-                 │          │          │
-                 └──────────┼──────────┘
-                            │
-                            ▼
-                       🔴 Redis
-
-              ┌─────────────────────────┐
-              │       Observability     │
-              │                         │
-              │ AORTA → Prometheus      │
-              │        → Grafana        │
-              └─────────────────────────┘
-```
+> **AORTA is built to understand the infrastructure underneath a web application — not just the application itself.**
 
 ---
 
-## ✨ Highlights
+# 🏗️ System Architecture
 
-| | |
-|:--|:--|
-| 🌐 **Layer-4 TCP Proxy** | Custom load balancer using non-blocking sockets and `epoll` |
-| ⚡ **Event-Driven I/O** | Reactor-based server architecture |
-| 🧵 **Concurrency** | Multi-reactor execution with a worker pool |
-| 🔄 **Routing** | Round Robin + Consistent Hashing |
-| ❤️ **Reliability** | Backend health checks + failover |
-| 🔴 **Persistence** | Redis-backed task management |
-| 📊 **Observability** | Prometheus metrics + Grafana dashboard |
-| 🐳 **Deployment** | Full Docker Compose environment |
-| 🧪 **Benchmarking** | `wrk` based load and latency testing |
+```text
+                                      🌐 CLIENT
+                                          │
+                                          ▼
+                              ┌───────────────────────┐
+                              │      ⚡ AORTA LB       │
+                              │                       │
+                              │ Layer-4 TCP Proxy     │
+                              │ Multi-Reactor / epoll │
+                              │ Routing + Health      │
+                              │ Failover              │
+                              └───────────┬───────────┘
+                                          │
+                       ┌──────────────────┼──────────────────┐
+                       │                  │                  │
+                       ▼                  ▼                  ▼
+                ┌────────────┐     ┌────────────┐     ┌────────────┐
+                │  SERVER 1  │     │  SERVER 2  │     │  SERVER 3  │
+                │   :8081    │     │   :8082    │     │   :8083    │
+                │            │     │            │     │            │
+                │  Reactor   │     │  Reactor   │     │  Reactor   │
+                │  HTTP/1.1  │     │  HTTP/1.1  │     │  HTTP/1.1  │
+                │ WorkerPool │     │ WorkerPool │     │ WorkerPool │
+                └──────┬─────┘     └──────┬─────┘     └──────┬─────┘
+                       │                  │                  │
+                       └──────────────────┼──────────────────┘
+                                          │
+                                          ▼
+                                   ┌─────────────┐
+                                   │  🔴 Redis   │
+                                   │ Task Store  │
+                                   └─────────────┘
+
+                    ┌──────────────────────────────────┐
+                    │       📊 OBSERVABILITY           │
+                    │                                  │
+                    │ AORTA → Prometheus → Grafana    │
+                    └──────────────────────────────────┘
+```
+
+The web server and load balancer are independently benchmarkable components. The load balancer is not required to measure the raw HTTP-server fast path.
 
 ---
 
-## 🏗️ Architecture
+# 🌐 Networking Layer
 
-### Request path
-
-```text
-                   🌐 CLIENT
-                       │
-                       ▼
-              ┌─────────────────┐
-              │  ⚡ AORTA LB     │
-              │      :9000      │
-              └────────┬────────┘
-                       │
-          ┌────────────┼────────────┐
-          │            │            │
-          ▼            ▼            ▼
-     ┌─────────┐  ┌─────────┐  ┌─────────┐
-     │ Server 1│  │ Server 2│  │ Server 3│
-     │  :8081  │  │  :8082  │  │  :8083  │
-     └────┬────┘  └────┬────┘  └────┬────┘
-          │            │            │
-          └────────────┼────────────┘
-                       │
-                       ▼
-                  🔴 Redis
-```
-
-### Backend execution model
+AORTA implements its networking path directly using Linux sockets.
 
 ```text
-                     ⚡ Reactor
-                         │
-                         │ request needs blocking work
-                         ▼
-                  ┌─────────────┐
-                  │ Worker Queue│
-                  └──────┬──────┘
-                         │
-              ┌──────────┼──────────┐
-              ▼          ▼          ▼
-           Worker     Worker     Worker
-              │          │          │
-              └──────────┼──────────┘
-                         ▼
-                      🔴 Redis
-                         │
-                         ▼
-                    eventfd
-                         │
-                         ▼
-                     ⚡ Reactor
-                         │
-                         ▼
-                      Client
+socket()
+   ↓
+bind()
+   ↓
+listen()
+   ↓
+accept()/accept4()
+   ↓
+non-blocking socket
+   ↓
+epoll
+   ↓
+recv() / send()
+   ↓
+close()
 ```
+
+Instead of assigning one thread to every connection, AORTA uses event-driven reactors:
+
+```text
+Many TCP Connections
+         │
+         ▼
+    epoll Reactor
+         │
+         ▼
+ ready sockets only
+```
+
+Each reactor owns its network-side connection state. Blocking application work is moved away from the event loop.
 
 ---
 
-## ⚡ Core Components
+# 🌐 HTTP/1.1 Engine
 
-### 1. 🌐 Layer-4 TCP Load Balancer
+AORTA includes its own lightweight HTTP processing layer.
 
-The load balancer sits between the client and the backend server pool.
+```text
+TCP Byte Stream
+      │
+      ▼
+┌───────────────────────┐
+│      HTTP Parser      │
+│ Request Line          │
+│ Headers               │
+│ Body                  │
+│ Chunked Encoding      │
+│ Trailers              │
+└───────────┬───────────┘
+            │
+            ▼
+       HttpRequest
+            │
+            ▼
+        HTTP Router
+            │
+            ▼
+        HttpHandler
+            │
+            ▼
+       HttpResponse
+```
 
-It handles:
+### Supported methods
 
-- client connection acceptance
-- backend connection establishment
-- TCP data forwarding
-- backend selection
-- backend health tracking
+| Method | Support |
+|:---:|:---:|
+| `GET` | ✅ |
+| `POST` | ✅ |
+| `PUT` | ✅ |
+| `DELETE` | ✅ |
+| `HEAD` | ✅ |
+| `OPTIONS` | ✅ |
+
+### Current routes
+
+```text
+GET    /hello
+GET    /health
+GET    /metrics
+GET    /tasks
+
+POST   /tasks
+PUT    /tasks/:id
+DELETE /tasks/:id
+```
+
+The server also supports static-file serving from the `public` directory.
+
+---
+
+# 🧵 Multi-Reactor Architecture
+
+```text
+                    Server
+                      │
+          ┌───────────┼───────────┐
+          │           │           │
+          ▼           ▼           ▼
+      Reactor 1   Reactor 2   Reactor 3
+          │           │           │
+        epoll       epoll       epoll
+          │           │           │
+          └───────────┼───────────┘
+                      │
+                 Worker Pool
+                      │
+                    Redis
+```
+
+Runtime thread counts can be controlled explicitly for experiments without changing the defaults:
+
+```bash
+AORTA_REACTORS=<count>
+AORTA_WORKERS=<count>
+```
+
+These controls are used by the scalability harness to distinguish reactor/process oversubscription from useful scaling.
+
+---
+
+# 🧵 Worker Pool & Asynchronous Redis
+
+Redis operations are kept off the network reactor.
+
+```text
+Request
+   │
+   ▼
+⚡ Reactor
+   │ submit
+   ▼
+Worker Queue
+   │
+   ├────► Worker
+   ├────► Worker
+   └────► Worker
+             │
+             ▼
+          🔴 Redis
+             │
+             ▼
+          eventfd
+             │
+             ▼
+         ⚡ Reactor
+             │
+             ▼
+          Response
+```
+
+Each worker maintains its own Redis client connection. Completion is signaled back to the reactor through `eventfd`.
+
+---
+
+# 🌍 Layer-4 TCP Load Balancer
+
+The AORTA load balancer operates at **Layer 4** and forwards TCP traffic without parsing the application protocol.
+
+```text
+               Layer 4                         Application Layer
+
+Client ───── TCP ─────► AORTA LB ───── TCP ─────► Backend
+                                                    │
+                                                    ▼
+                                               HTTP Parser
+```
+
+### Routing
+
+AORTA supports:
+
+- Round Robin
+- Consistent Hashing with virtual nodes
+
+The routing mode can be selected with:
+
+```bash
+AORTA_LB_ROUTING=round_robin
+AORTA_LB_ROUTING=consistent_hash
+```
+
+### Health checks and failover
+
+Unhealthy backends are removed from rotation and healthy backends continue receiving traffic. Health checking runs through the load balancer's event-driven loop.
+
+Regression coverage includes:
+
+- partial writes
+- slow readers
+- client disconnects
+- backend disconnects
+- backend distribution
+- health checks
 - failover
-- non-blocking event-driven I/O
-
-#### 🔄 Routing
-
-**Round Robin**
-
-```text
-Connection 1  → Server 1
-Connection 2  → Server 2
-Connection 3  → Server 3
-Connection 4  → Server 1
-...
-```
-
-**Consistent Hashing**
-
-Connections can be mapped deterministically while reducing remapping when backend membership changes.
+- connection churn
 
 ---
 
-### 2. ⚙️ Event-Driven HTTP Server
+# 📝 Task Manager
 
-Each backend server is built around:
+The application workload exposes Redis-backed CRUD operations:
 
-- non-blocking sockets
-- Linux `epoll`
-- reactor-based event handling
-- HTTP request parsing
-- HTTP response generation
-- per-connection state
-
-Rather than assigning one thread to every connection, the reactor monitors many sockets and processes them when I/O becomes ready.
-
----
-
-### 3. 🧵 Multi-Reactor + Worker Pool
-
-The network event loop should remain responsive.
-
-Redis operations can block, so AORTA moves that work into a worker pool and sends completion notifications back to the reactor.
-
-```text
-              Network I/O
-                   │
-                   ▼
-            ⚡ Reactor
-                   │
-                   ▼
-             Worker Queue
-                   │
-        ┌──────────┼──────────┐
-        ▼          ▼          ▼
-      Worker     Worker     Worker
-        │          │          │
-        └──────────┼──────────┘
-                   ▼
-                🔴 Redis
-                   │
-                   ▼
-                eventfd
-                   │
-                   ▼
-              ⚡ Reactor
-```
-
-Each worker maintains its own Redis client connection.
-
----
-
-### 4. 🔴 Redis Task Manager
-
-AORTA includes a Redis-backed CRUD API.
-
-| Method | Endpoint | Purpose |
+| Method | Endpoint | Description |
 |:---:|:---|:---|
-| `GET` | `/tasks` | Retrieve all tasks |
+| `GET` | `/tasks` | List tasks |
 | `POST` | `/tasks` | Create a task |
 | `PUT` | `/tasks/:id` | Update a task |
 | `DELETE` | `/tasks/:id` | Delete a task |
 
-#### 🚀 Retrieval optimization
-
-The original task retrieval path used an **N+1 Redis access pattern**.
-
-It was changed to a **single Lua `EVAL` operation**, reducing unnecessary Redis round trips.
+The frontend is available through the load balancer at:
 
 ```text
-Before                      After
-
-SMEMBERS tasks               Single Lua EVAL
-      │                            │
-      ├─ HGETALL task:1            ├─ task:1
-      ├─ HGETALL task:2            ├─ task:2
-      ├─ HGETALL task:3            ├─ task:3
-      ├─ ...                       └─ ...
-      └─ HGETALL task:N
+http://localhost:9000/
 ```
 
 ---
 
-### 5. ❤️ Health Checks & Failover
+# 🚀 Redis Listing Optimization
 
-The load balancer tracks backend availability.
+The task-listing path went through two generations of optimization.
+
+The earlier implementation avoided an N+1 network access pattern by moving task retrieval into Redis, but its Lua script still performed a per-task loop.
+
+Profiling showed that this Lua execution became the dominant Redis cost under load.
+
+The current path uses native Redis operations:
 
 ```text
-        Healthy Backend
-              │
-              ▼
-        Normal Routing
-              │
-           failure
-              │
-              ▼
-        Health Detection
-              │
-              ▼
-       Mark Unhealthy
-              │
-              ▼
-     Remove From Rotation
-              │
-              ▼
-      Healthy Backends
+GET /tasks
+    │
+    ▼
+AORTA worker
+    │
+    ▼
+Redis SORT ... GET
+    │
+    ▼
+serialize response
+```
+
+In the controlled c1000 `/tasks` test:
+
+| Metric | Before | After |
+|---|---:|---:|
+| Successful requests/sec | **3,258** | **9,593** |
+| p99 latency | **462 ms** | **107 ms** |
+
+That is approximately a **2.94× increase in successful throughput** with roughly a **77% reduction in p99 latency**.
+
+At the current end-to-end limit, Redis becomes the first saturated component for this workload.
+
+---
+
+# ⚡ HTTP Fast-Path Optimization
+
+Profiling found that every response previously scheduled an unnecessary writable-event cycle:
+
+```text
+OLD
+
+response ready
+    ↓
+enable EPOLLOUT
+    ↓
+epoll_ctl
+    ↓
+epoll_wait
+    ↓
+writable event
+    ↓
+send
+    ↓
+disable EPOLLOUT
+```
+
+The optimized path attempts the write immediately and only subscribes to `EPOLLOUT` when the socket actually blocks:
+
+```text
+NEW
+
+response ready
+    ↓
+send immediately
+    │
+    ├── complete ──► done
+    │
+    └── partial / EAGAIN
+              ↓
+        enable EPOLLOUT
+              ↓
+        resume later
+```
+
+Measured `epoll_ctl` calls per send fell from:
+
+```text
+2.012  →  0.00624
+```
+
+The same controlled before/after benchmark produced:
+
+| Connections | Before RPS | After RPS | Mean latency before → after | p99 before → after |
+|---:|---:|---:|---:|---:|
+| 100 | 484,479 | **522,222** | 0.378 → **0.224 ms** | 2.63 → **1.75 ms** |
+| 500 | 511,187 | **550,751** | 1.050 → **0.735 ms** | 4.30 → **3.20 ms** |
+| 1000 | 480,011 | **550,497** | 2.000 → **1.240 ms** | 5.78 → **3.58 ms** |
+| 5000 | 362,631 | **386,449** | 13.310 → **6.560 ms** | 24.64 → **13.58 ms** |
+
+The partial-write and `EAGAIN` paths are regression-tested so the fast path does not trade correctness for throughput.
+
+> These figures belong to this specific fixed-affinity direct-server experiment. Results from different benchmark topologies are intentionally reported separately.
+
+---
+
+# 🔀 Load-Balancer Capacity
+
+The load balancer was profiled independently by comparing a backend directly against the same backend through the proxy.
+
+At c1000 in the controlled direct-vs-proxy test:
+
+| Path | Throughput |
+|---|---:|
+| Direct backend | **~223K RPS** |
+| 4-reactor AORTA LB → backend | **~151K RPS** |
+
+Adding two or three backend servers did **not** materially increase aggregate throughput in this fast-path workload, while request distribution remained essentially even.
+
+This establishes the L4 proxy as the limiting component for this particular high-throughput workload rather than the backend-selection algorithm or an imbalanced server pool.
+
+A connection-churn bug discovered during profiling was also fixed:
+
+```text
+LB read errors during churn:
+62,386  →  0
 ```
 
 ---
 
-## 📊 Observability
+# 📊 End-to-End Bottleneck Picture
 
-AORTA includes a real **Prometheus + Grafana** monitoring stack.
+AORTA does not have one universal bottleneck. The limiting component changes with workload.
 
-### Metrics exposed
+### Fast HTTP workload
 
-- request counters
-- response counters
-- active connections
-- backend health
-- backend failovers
-- average latency
-- p50 / p95 / p99 latency
-- latency histograms
-- error counters
-- backend connection statistics
+```text
+Client
+   │
+   ▼
+AORTA LB  ← saturates before multiple backends add useful capacity
+   │
+   ├── Server 1
+   ├── Server 2
+   └── Server 3
+```
 
-### Local monitoring services
+### Redis-backed `/tasks` workload
 
-> These addresses are **local runtime endpoints**. They become available on the machine running AORTA after the Docker stack has been started. They are not public project links.
+```text
+Client
+   │
+   ▼
+AORTA LB
+   │
+   ▼
+AORTA Servers
+   │
+   ▼
+Redis  ← saturates first
+```
 
-| Service | Local address |
+With three backends, end-to-end `/tasks` throughput is approximately:
+
+```text
+~9.5K successful requests/sec
+```
+
+At that point the load balancer remains below roughly **37% process CPU**, confirming that Redis—not the proxy—is the first saturated component for this workload.
+
+---
+
+# 📈 Same-Host Scaling Experiment
+
+Multiple complete server processes were also tested on the same physical host:
+
+| Processes | Aggregate throughput |
+|---:|---:|
+| 1 | **~347K RPS** |
+| 2 | **~277K RPS** |
+| 4 | **~243K RPS** |
+
+Throughput decreased because additional full AORTA instances oversubscribed an architecture that already uses multiple reactors.
+
+This is intentionally described as **same-host multicore/process scaling**, not horizontal scaling across machines.
+
+The repository now exposes `AORTA_REACTORS` and `AORTA_WORKERS` so future tests can hold the total execution resources constant while comparing process-level and reactor-level scaling.
+
+---
+
+# 🔬 Performance Engineering Methodology
+
+AORTA follows a measurement-first workflow:
+
+```text
+📏 Baseline
+    ↓
+🔎 Profile
+    ↓
+🎯 Confirm root cause
+    ↓
+🛠️ Make one targeted change
+    ↓
+🧪 Repeat identical benchmark
+    ↓
+✅ Keep measurable wins
+↩️ Revert non-wins
+```
+
+Examples:
+
+- redundant response-side `EPOLLOUT` cycles were measured and removed
+- `epoll_ctl` calls/send fell from 2.012 to 0.00624
+- Redis Lua per-task work was replaced with native `SORT ... GET`
+- `/tasks` c1000 successful throughput improved from 3,258 to 9,593 req/s
+- an LB peer-close bug causing 62,386 churn-time read errors was fixed
+- a profiled hash-map optimization showed no measurable improvement and was **reverted**
+- local `wrk`/network processing was identified as a measurement constraint at high direct-path load
+
+This project deliberately reports rejected hypotheses and benchmark limitations instead of keeping changes simply because they appear theoretically faster.
+
+---
+
+# 🧪 Benchmark & Regression Tooling
+
+The repository contains reproducible performance and correctness tooling under:
+
+```text
+benchmarks/
+tests/
+```
+
+Important files include:
+
+```text
+benchmarks/
+├── run.py
+├── profile.py
+├── profile_tasks.py
+├── scalability.py
+├── summarize.py
+└── REPORT.md
+
+tests/
+├── reactor_output.py
+├── lb_output.py
+└── tasks_output.py
+```
+
+The investigation uses tools such as:
+
+- `wrk`
+- `perf`
+- `strace`
+- `pidstat`
+- `mpstat`
+- Redis `INFO`
+- ASan / UBSan
+
+The full benchmark methodology, raw observations, profiling evidence, rejected hypotheses and reproduction commands are documented in:
+
+```text
+benchmarks/REPORT.md
+```
+
+### Important benchmark note
+
+AORTA has been tested under multiple topologies and CPU-affinity configurations. Numbers from different experiments should **not** be compared as if they came from the same setup.
+
+For example:
+
+- the ~550K RPS result is from the optimized direct-server fast-path comparison
+- the ~223K direct result is the direct side of the later controlled LB-vs-backend experiment
+- the ~347K result belongs to the separate same-host process-scaling experiment
+
+Before/after claims in this README only compare measurements taken under identical settings.
+
+---
+
+# ✅ Verification
+
+The current performance work was validated with:
+
+- RelWithDebInfo build
+- ASan / UBSan build
+- HTTP reactor regression tests
+- partial-write / `EAGAIN` recovery
+- Redis CRUD and native task listing
+- LB partial writes
+- slow-reader handling
+- disconnect handling
+- backend distribution
+- failover
+- health checks
+- `git diff --check`
+
+---
+
+# 📊 Prometheus + Grafana
+
+AORTA includes a monitoring stack:
+
+```text
+AORTA Services
+      │
+      ▼
+ Prometheus
+      │
+      ▼
+   Grafana
+```
+
+The dashboard tracks operational information including throughput, latency percentiles, active connections, backend health and failover-related state.
+
+| Tool | Local address |
 |:--|:--|
-| ⚡ Load Balancer | `http://localhost:9000` |
-| 📊 Metrics | `http://localhost:9000/metrics` |
-| 🔎 Prometheus | `http://localhost:9090` |
-| 📈 Grafana | `http://localhost:3000` |
+| AORTA / Task Manager | `http://localhost:9000/` |
+| Prometheus | `http://localhost:9090` |
+| Grafana | `http://localhost:3000` |
+| Raw AORTA metrics | `http://localhost:9000/metrics` |
 
 ---
 
-## 🐳 Getting Started
+# 🖥️ Platform Requirement
 
-### ✅ Prerequisites
+AORTA uses Linux-specific primitives including `epoll`, `accept4` and `SO_REUSEPORT`.
 
-AORTA is intended to be run with **Docker Compose**.
+Native execution is intended for Linux.
 
-Install:
+For Windows, use WSL2 or Docker Desktop. For macOS, Docker Desktop can be used for the complete Compose stack.
 
-- **Git**
-- **Docker Engine + Docker Compose plugin**
-- or **Docker Desktop** on Windows/macOS
+---
 
-Verify:
+# 🐳 Run AORTA
+
+## Requirements
 
 ```bash
 git --version
@@ -326,30 +647,20 @@ docker --version
 docker compose version
 ```
 
-Make sure Docker is running before continuing.
-
----
-
-### 1️⃣ Clone the repository
-
-Replace `<REPOSITORY_URL>` with the GitHub URL of this repository.
+## Clone
 
 ```bash
-git clone <REPOSITORY_URL>
+git clone https://github.com/Sri-Harshaaa/AORTA.git
 cd AORTA
 ```
 
----
-
-### 2️⃣ Build and start AORTA
-
-The easiest way to launch the complete environment is:
+## Start the complete stack
 
 ```bash
 docker compose up -d --build
 ```
 
-This builds the AORTA images and starts:
+This starts:
 
 ```text
 ⚡ Load Balancer
@@ -357,293 +668,123 @@ This builds the AORTA images and starts:
 🖥️ Server 2
 🖥️ Server 3
 🔴 Redis
-🔎 Prometheus
-📈 Grafana
+📡 Prometheus
+📊 Grafana
 ```
 
----
-
-### 3️⃣ Verify the deployment
+Verify:
 
 ```bash
 docker compose ps
 ```
 
-To inspect logs:
-
-```bash
-docker compose logs
-```
-
-Or a specific service:
-
-```bash
-docker compose logs lb
-docker compose logs server1
-docker compose logs server2
-docker compose logs server3
-```
-
----
-
-## 🧪 Test the System
-
-### ❤️ Health check
-
-After the containers are running:
+Health check:
 
 ```bash
 curl http://localhost:9000/health
 ```
 
-Expected:
-
-```text
-OK
-```
-
-### 📋 Read tasks
+Task list:
 
 ```bash
 curl http://localhost:9000/tasks
 ```
 
-### ➕ Create a task
+Stop:
 
 ```bash
-curl -X POST http://localhost:9000/tasks \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Build AORTA","description":"Finish the distributed system"}'
-```
-
-### ✏️ Update a task
-
-```bash
-curl -X PUT http://localhost:9000/tasks/1 \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Build AORTA v2","description":"Improve performance"}'
-```
-
-### 🗑️ Delete a task
-
-```bash
-curl -X DELETE http://localhost:9000/tasks/1
+docker compose down
 ```
 
 ---
 
-## 📈 Performance
-
-AORTA was benchmarked with [`wrk`](https://github.com/wg/wrk) under increasing client concurrency.
-
-Example:
-
-```bash
-wrk --latency -t4 -c500 -d30s http://localhost:9000/tasks
-```
-
-> ⚠️ These figures are measurements from the tested build. Actual results depend on hardware, operating system, Docker configuration, workload, and system state.
-
-### ❤️ `/health`
-
-| Concurrency | Throughput | Avg | p50 | p99 |
-|---:|---:|---:|---:|---:|
-| 100 | **100.9K RPS** | 0.96 ms | 0.85 ms | 2.80 ms |
-| 500 | **100.3K RPS** | 4.98 ms | 4.33 ms | 15.99 ms |
-| 1000 | **73.2K RPS** | 12.96 ms | 11.86 ms | 34.60 ms |
-| 2000 | **89.1K RPS** | 22.08 ms | 19.98 ms | 60.35 ms |
-| 5000 | **60.9K RPS** | 80.63 ms | 74.94 ms | 170.28 ms |
-
-### 📋 `/tasks`
-
-| Concurrency | Throughput | Avg | p50 | p99 |
-|---:|---:|---:|---:|---:|
-| 100 | **23.9K RPS** | 4.19 ms | 3.84 ms | 8.75 ms |
-| 500 | **20.8K RPS** | 24.00 ms | 22.12 ms | 43.50 ms |
-| 1000 | **19.4K RPS** | 51.34 ms | 46.77 ms | 88.38 ms |
-| 2000 | **18.6K RPS** | 107.03 ms | 102.07 ms | 166.52 ms |
-| 5000 | **20.2K RPS** | 244.61 ms | 222.51 ms | 402.58 ms |
-
-### 📄 Full benchmark report
-
-See:
-
-```text
-docs/AORTA_Benchmark_Performance_Report.pdf
-```
-
----
-
-## 🔬 Performance Engineering
-
-The project was optimized through measurement rather than speculative tuning.
-
-```text
-📏 Measure
-    ↓
-🔎 Identify bottleneck
-    ↓
-🛠️ Make one targeted change
-    ↓
-🧪 Benchmark again
-    ↓
-✅ Keep   /   ↩️ Revert
-```
-
-| Area | Optimization |
-|:--|:--|
-| 🔴 Redis | Replaced N+1 task retrieval with one Lua operation |
-| ⚡ Networking | Non-blocking sockets + `epoll` |
-| 🧵 Concurrency | Redis work moved to worker threads |
-| 📡 Completion | `eventfd` used for worker-to-reactor notification |
-| 🧹 Epoll | Avoided unnecessary `epoll_ctl` modifications |
-
----
-
-## 📁 Project Structure
-
-```text
-AORTA/
-│
-├── CMakeLists.txt
-├── Dockerfile.lb
-├── Dockerfile.server
-├── docker-compose.yml
-├── .gitignore
-├── README.md
-│
-├── config/
-│   └── backends.docker.conf
-│
-├── include/
-│   ├── common/
-│   ├── http/
-│   ├── lb/
-│   └── server/
-│
-├── src/
-│   ├── http/
-│   ├── lb/
-│   └── server/
-│
-├── prometheus/
-│   └── prometheus.yml
-│
-├── grafana/
-│   ├── dashboards/
-│   └── provisioning/
-│
-└── docs/
-    └── AORTA_Benchmark_Performance_Report.pdf
-```
-
----
-
-## 🧱 Native Linux Build
-
-Docker Compose is the recommended way to run the complete distributed stack.
-
-For native Linux development:
+# 🧱 Native Linux Build
 
 ```bash
 cmake -S . -B build
 cmake --build build -j
 ```
 
-The build output is generated under:
+Generated binaries include:
 
 ```text
-build/
+build/aorta
+build/aorta_lb
 ```
 
 ---
 
-## 🛑 Stop AORTA
-
-Stop the containers:
-
-```bash
-docker compose down
-```
-
-Stop the containers and remove persistent volumes:
-
-```bash
-docker compose down -v
-```
-
-> Removing volumes also removes persistent Redis and Grafana data created by the Compose deployment.
-
----
-
-## ✅ Current Status
+# 📁 Project Structure
 
 ```text
-✅ Custom Layer-4 TCP Load Balancer
-✅ Linux epoll + non-blocking sockets
-✅ Multi-reactor architecture
-✅ Worker pool
-✅ Redis persistence
-✅ Round Robin routing
-✅ Consistent Hashing
-✅ Backend health checks
-✅ Backend failover
-✅ HTTP CRUD task API
-✅ Prometheus metrics
-✅ Grafana dashboard
-✅ Docker Compose deployment
-✅ Performance benchmarking
-✅ Benchmark report
+AORTA/
+│
+├── apps/
+│   ├── lb/
+│   └── server/
+│
+├── benchmarks/
+│   ├── REPORT.md
+│   ├── run.py
+│   ├── profile.py
+│   ├── profile_tasks.py
+│   ├── scalability.py
+│   └── summarize.py
+│
+├── include/
+│   ├── common/
+│   ├── http/
+│   ├── lb/
+│   ├── net/
+│   ├── redis/
+│   ├── server/
+│   ├── task/
+│   └── worker/
+│
+├── src/
+│   ├── http/
+│   ├── lb/
+│   ├── net/
+│   ├── redis/
+│   ├── server/
+│   ├── task/
+│   └── worker/
+│
+├── tests/
+│   ├── reactor_output.py
+│   ├── lb_output.py
+│   └── tasks_output.py
+│
+├── config/
+├── prometheus/
+├── grafana/
+├── public/
+│
+├── Dockerfile.lb
+├── Dockerfile.server
+├── docker-compose.yml
+├── CMakeLists.txt
+├── LICENSE
+└── README.md
 ```
 
 ---
 
-## 🎓 What AORTA Explores
+# 📚 Performance Report
+
+For the detailed benchmark methodology, profiler evidence, raw observations and reproduction commands:
 
 ```text
-        🌐 Networking
-              │
-              ▼
-          TCP / Sockets
-              │
-              ▼
-            epoll
-              │
-              ▼
-      🧵 Concurrency
-              │
-              ▼
-        🔴 Persistence
-              │
-              ▼
-        ❤️ Reliability
-              │
-              ▼
-       📊 Observability
-              │
-              ▼
-        🧪 Performance
+benchmarks/REPORT.md
 ```
-
-AORTA is ultimately an exploration of the layers that sit between an application and the operating system:
-
-**HTTP → TCP → Sockets → epoll → Threads → Kernel**
-
----
-
-## 📚 Documentation
-
-Detailed benchmark results and analysis:
-
-**`docs/AORTA_Benchmark_Performance_Report.pdf`**
 
 ---
 
 <div align="center">
 
-# ⚡ AORTA
+## 🫀 AORTA
 
-### Networking · Concurrency · Distributed Systems · Performance
+**Networking · Concurrency · Distributed Systems · Performance Engineering**
 
 *Built to understand what happens underneath.*
 
@@ -653,4 +794,6 @@ Detailed benchmark results and analysis:
 
 ## 📜 License
 
-Add the project's license here.
+AORTA is released under the MIT License.
+
+See [`LICENSE`](LICENSE) for the full license text.
