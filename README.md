@@ -826,25 +826,25 @@ wrk --latency -t4 -c500 -d30s http://localhost:9000/tasks
 
 | Concurrency | Throughput | Avg | p50 | p99 |
 |---:|---:|---:|---:|---:|
-| 100 | **100.9K RPS** | 0.96 ms | 0.85 ms | 2.80 ms |
-| 500 | **100.3K RPS** | 4.98 ms | 4.33 ms | 15.99 ms |
-| 1000 | **73.2K RPS** | 12.96 ms | 11.86 ms | 34.60 ms |
-| 2000 | **89.1K RPS** | 22.08 ms | 19.98 ms | 60.35 ms |
-| 5000 | **60.9K RPS** | 80.63 ms | 74.94 ms | 170.28 ms |
+| 100 | **170.3K RPS** | 0.56 ms | 0.52 ms | 1.04 ms |
+| 500 | **160.1K RPS** | 3.08 ms | 3.03 ms | 4.46 ms |
+| 1000 | **142.3K RPS** | 6.96 ms | 6.91 ms | 8.40 ms |
+| 2000 | **130.9K RPS** | 15.11 ms | 14.97 ms | 17.55 ms |
+| 5000 | **107.1K RPS** | 45.78 ms | 38.85 ms | 63.64 ms |
 
 ### 📋 `/tasks`
 
 | Concurrency | Throughput | Avg | p50 | p99 |
 |---:|---:|---:|---:|---:|
-| 100 | **23.9K RPS** | 4.19 ms | 3.84 ms | 8.75 ms |
-| 500 | **20.8K RPS** | 24.00 ms | 22.12 ms | 43.50 ms |
-| 1000 | **19.4K RPS** | 51.34 ms | 46.77 ms | 88.38 ms |
-| 2000 | **18.6K RPS** | 107.03 ms | 102.07 ms | 166.52 ms |
-| 5000 | **20.2K RPS** | 244.61 ms | 222.51 ms | 402.58 ms |
+| 100 | **9.3K RPS** | 10.25 ms | 10.21 ms | 12.84 ms |
+| 500 | **9.6K RPS** | 50.99 ms | 50.88 ms | 62.01 ms |
+| 1000 | **9.5K RPS** | 103.13 ms | 103.26 ms | 112.42 ms |
+| 2000 | **11.6K RPS** | 166.32 ms | 166.70 ms | 187.30 ms |
+| 5000 | **8.6K RPS** | 434.96 ms | 515.44 ms | 721.43 ms |
 
 > ⚠️ These are measurements from the tested build. Actual results depend on CPU, operating system, Docker configuration, workload, and system state.
 
-The benchmark report also records an earlier optimized `/tasks` run reaching approximately **28.9K requests/sec**, while direct backend testing reached approximately **35.8K requests/sec** at c500.
+The benchmark report also records an earlier optimized `/tasks` run reaching approximately **12.2K requests/sec**, while direct backend testing reached approximately **9.8K requests/sec** at c500.
 
 📄 Detailed benchmark report:
 
