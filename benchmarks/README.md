@@ -1,5 +1,51 @@
 # Performance investigation
 
+## Remaining-system matrix
+
+`scalability.py` drives the direct, LB, Redis, multi-backend, and same-host
+SO_REUSEPORT measurements documented in `REPORT.md`. It starts all AORTA
+processes itself, records raw wrk output and per-process CPU deltas, and rejects
+an existing output label so prior evidence is not overwritten. Example:
+
+```
+python3 benchmarks/scalability.py my-direct \
+  --server-binary build/perf-rest/aorta --concurrency 100,500,1000,5000
+
+python3 benchmarks/scalability.py my-lb \
+  --server-binary build/perf-rest/aorta \
+  --lb-binary build/perf-rest/aorta_lb --via-lb --backends 3 \
+  --lb-reactors 4 --concurrency 100,500,1000,5000
+
+python3 benchmarks/scalability.py my-process-scale \
+  --server-binary build/perf-rest/aorta --backends 4 --shared-port \
+  --reactors 1 --workers 1 --concurrency 1000,5000
+```
+
+For Redis tests, start and seed an isolated Redis, then pass both its port and
+host PID with `--redis-port` and `--redis-pid`; this records Redis process CPU in
+the same timing window. CPU affinity defaults match the report's two-physical-
+core backend, two-physical-core LB, and four-physical-core client layout on the
+measured host. Adapt affinity to the local CPU topology while keeping compared
+runs identical.
+
+The server accepts `AORTA_REACTORS` and `AORTA_WORKERS` for explicit deployment
+or affinity tuning. If unset or invalid, the original hardware-derived defaults
+remain in effect. `AORTA_LB_REACTORS` continues to control LB reactors.
+
+Correctness commands:
+
+```
+python3 tests/reactor_output.py build/perf-rest/aorta
+python3 tests/tasks_output.py build/perf-rest/aorta
+python3 tests/lb_output.py build/perf-rest/aorta build/perf-rest/aorta_lb
+```
+
+The LB and task profile commands, Redis INFO snapshots, and exact result-size
+fixtures are retained as raw artifacts under `results/rest-lb-profile/` and
+`results/rest-tasks-profile/`; see the report for the commands and limitations.
+
+## HTTP fast-path investigation
+
 Run from the repository root. Requires Linux, cmake, a C++20 compiler, hiredis,
 wrk, taskset, pidstat, mpstat, perf, strace, curl and Python 3.
 

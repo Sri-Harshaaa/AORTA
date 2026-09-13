@@ -48,6 +48,10 @@ private:
 
         bool backend_read_closed{false};
 
+        bool client_write_closed{false};
+
+        bool backend_write_closed{false};
+
         bool closing{false};
 
         bool metrics_connection{false};
@@ -106,10 +110,11 @@ private:
         ConnectionPair& connection
     );
 
-    void forwardData(
+    bool forwardData(
         int source_fd,
         std::string& output_buffer,
-        std::size_t& offset
+        std::size_t& offset,
+        bool drain = false
     );
 
     void flushData(

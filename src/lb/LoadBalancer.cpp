@@ -265,7 +265,10 @@ void LoadBalancer::start() {
                 continue;
             }
 
-            if(event_flags & EPOLLHUP) {
+            if(
+                (event_flags & EPOLLHUP) &&
+                !(event_flags & EPOLLIN)
+            ) {
 
                 if(is_backend_fd && connection.backend_connecting) {
 
@@ -282,21 +285,6 @@ void LoadBalancer::start() {
                 );
 
                 continue;
-            }
-
-            if(
-                (event_flags & EPOLLRDHUP) &&
-                !is_backend_fd
-            ) {
-
-                connection.client_read_closed = true;
-
-                if(connection.backend_fd != -1) {
-                    shutdown(
-                        connection.backend_fd,
-                        SHUT_WR
-                    );
-                }
             }
 
             auto current_it =
@@ -316,11 +304,13 @@ void LoadBalancer::start() {
 
                 if(is_backend_fd) {
 
-                    forwardData(
+                    if(!forwardData(
                         current.backend_fd,
                         current.backend_to_client,
                         current.backend_to_client_offset
-                    );
+                    )) {
+                        continue;
+                    }
 
                 } else {
 
@@ -493,16 +483,33 @@ void LoadBalancer::start() {
                         continue;
                     }
 
-                    forwardData(
+                    if(!forwardData(
                         current.client_fd,
                         current.client_to_backend,
                         current.client_to_backend_offset
-                    );
+                    )) {
+                        continue;
+                    }
                 }
             }
 
             if(
-                (event_flags & EPOLLRDHUP) &&
+                (event_flags & (EPOLLRDHUP | EPOLLHUP)) &&
+                !is_backend_fd &&
+                !current.metrics_connection
+            ) {
+                if(!forwardData(
+                    current.client_fd,
+                    current.client_to_backend,
+                    current.client_to_backend_offset,
+                    true
+                )) {
+                    continue;
+                }
+            }
+
+            if(
+                (event_flags & (EPOLLRDHUP | EPOLLHUP)) &&
                 is_backend_fd
             ) {
 
@@ -519,13 +526,14 @@ void LoadBalancer::start() {
                 ConnectionPair& current =
                     current_it->second;
 
-                current.backend_read_closed =
-                    true;
-
-                shutdown(
-                    current.client_fd,
-                    SHUT_WR
-                );
+                if(!forwardData(
+                    current.backend_fd,
+                    current.backend_to_client,
+                    current.backend_to_client_offset,
+                    true
+                )) {
+                    continue;
+                }
             }
 
             current_it =
@@ -664,6 +672,36 @@ void LoadBalancer::start() {
                 after_io.backend_to_client.clear();
 
                 after_io.backend_to_client_offset = 0;
+            }
+
+            if(
+                after_io.client_read_closed &&
+                after_io.backend_fd == -1 &&
+                after_io.client_to_backend.empty() &&
+                !after_io.metrics_connection
+            ) {
+                closeConnection(after_io.client_fd);
+                continue;
+            }
+
+            if(
+                after_io.client_read_closed &&
+                !after_io.backend_write_closed &&
+                after_io.client_to_backend.empty() &&
+                after_io.backend_fd != -1 &&
+                !after_io.backend_connecting
+            ) {
+                shutdown(after_io.backend_fd, SHUT_WR);
+                after_io.backend_write_closed = true;
+            }
+
+            if(
+                after_io.backend_read_closed &&
+                !after_io.client_write_closed &&
+                after_io.backend_to_client.empty()
+            ) {
+                shutdown(after_io.client_fd, SHUT_WR);
+                after_io.client_write_closed = true;
             }
 
             if(
@@ -1161,32 +1199,67 @@ int LoadBalancer::connectToBackend(
     return -1;
 }
 
-void LoadBalancer::forwardData(
+bool LoadBalancer::forwardData(
     int source_fd,
     std::string& output_buffer,
-    std::size_t& offset
+    std::size_t& offset,
+    bool drain
 ) {
     char buffer[64 * 1024];
 
-    const std::size_t pending_bytes =
-        output_buffer.size() - offset;
+    while(true) {
+        const std::size_t pending_bytes =
+            output_buffer.size() - offset;
 
-    const ssize_t bytes_read =
-        recv(
-            source_fd,
-            buffer,
-            sizeof(buffer),
-            0
-        );
+        const ssize_t bytes_read =
+            recv(
+                source_fd,
+                buffer,
+                sizeof(buffer),
+                0
+            );
 
-    if(bytes_read > 0) {
+        if(bytes_read > 0) {
+            if(
+                pending_bytes +
+                static_cast<std::size_t>(bytes_read)
+                > MAX_BUFFER_SIZE
+            ) {
+                auto backend_it =
+                    backend_to_client.find(source_fd);
 
-        if(
-            pending_bytes +
-            static_cast<std::size_t>(bytes_read)
-            > MAX_BUFFER_SIZE
-        ) {
+                if(
+                    backend_it !=
+                    backend_to_client.end()
+                ) {
+                    closeConnection(
+                        backend_it->second
+                    );
+                } else {
+                    closeConnection(source_fd);
+                }
 
+                return false;
+            }
+
+            if(offset == output_buffer.size()) {
+                output_buffer.clear();
+                offset = 0;
+            }
+
+            output_buffer.append(
+                buffer,
+                static_cast<std::size_t>(bytes_read)
+            );
+
+            if(!drain) {
+                return true;
+            }
+
+            continue;
+        }
+
+        if(bytes_read == 0) {
             auto backend_it =
                 backend_to_client.find(source_fd);
 
@@ -1194,34 +1267,48 @@ void LoadBalancer::forwardData(
                 backend_it !=
                 backend_to_client.end()
             ) {
+                auto connection_it =
+                    connections.find(
+                        backend_it->second
+                    );
 
-                closeConnection(
-                    backend_it->second
-                );
-
+                if(
+                    connection_it !=
+                    connections.end()
+                ) {
+                    connection_it->second.backend_read_closed =
+                        true;
+                }
             } else {
+                auto connection_it =
+                    connections.find(source_fd);
 
-                closeConnection(source_fd);
+                if(
+                    connection_it !=
+                    connections.end()
+                ) {
+                    connection_it->second.client_read_closed =
+                        true;
+                }
             }
 
-            return;
+            return true;
         }
 
-        if(offset == output_buffer.size()) {
+        if(errno == EINTR) {
+            if(drain) {
+                continue;
+            }
 
-            output_buffer.clear();
-            offset = 0;
+            return true;
         }
 
-        output_buffer.append(
-            buffer,
-            static_cast<std::size_t>(bytes_read)
-        );
-
-        return;
-    }
-
-    if(bytes_read == 0) {
+        if(
+            errno == EAGAIN ||
+            errno == EWOULDBLOCK
+        ) {
+            return true;
+        }
 
         auto backend_it =
             backend_to_client.find(source_fd);
@@ -1230,7 +1317,6 @@ void LoadBalancer::forwardData(
             backend_it !=
             backend_to_client.end()
         ) {
-
             auto connection_it =
                 connections.find(
                     backend_it->second
@@ -1240,69 +1326,16 @@ void LoadBalancer::forwardData(
                 connection_it !=
                 connections.end()
             ) {
-
-                connection_it->second.backend_read_closed =
-                    true;
+                closeConnection(
+                    connection_it->second.client_fd
+                );
             }
-
         } else {
-
-            auto connection_it =
-                connections.find(source_fd);
-
-            if(
-                connection_it !=
-                connections.end()
-            ) {
-
-                connection_it->second.client_read_closed =
-                    true;
-            }
+            closeConnection(source_fd);
         }
 
-        return;
+        return false;
     }
-
-    if(errno == EINTR) {
-        return;
-    }
-
-    if(
-        errno == EAGAIN ||
-        errno == EWOULDBLOCK
-    ) {
-        return;
-    }
-
-    auto backend_it =
-        backend_to_client.find(source_fd);
-
-    if(
-        backend_it !=
-        backend_to_client.end()
-    ) {
-
-        auto connection_it =
-            connections.find(
-                backend_it->second
-            );
-
-        if(
-            connection_it !=
-            connections.end()
-        ) {
-
-            closeConnection(
-                connection_it->second.client_fd
-            );
-        }
-
-    } else {
-
-        closeConnection(source_fd);
-    }
-
-    return;
 }
 
 void LoadBalancer::flushData(

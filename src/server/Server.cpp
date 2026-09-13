@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <chrono>
 #include <csignal>
+#include <cstdlib>
 #include <iostream>
+#include <string>
 #include <thread>
 
 volatile std::sig_atomic_t shutdown_requested = 0;
@@ -16,6 +18,24 @@ void handleSignal(int signal) {
     }
 }
 
+std::size_t loadThreadCount(
+    const char* name,
+    std::size_t fallback
+) {
+    const char* value = std::getenv(name);
+
+    if(value == nullptr) {
+        return fallback;
+    }
+
+    try {
+        const std::size_t count = std::stoull(value);
+        return count == 0 ? fallback : count;
+    } catch(...) {
+        return fallback;
+    }
+}
+
 }
 
 
@@ -24,17 +44,29 @@ Server::Server(int port)
     const unsigned int hardware =
         std::thread::hardware_concurrency();
 
-    reactor_count =
-        hardware == 0
-            ? 1
-            : static_cast<int>(hardware);
+    const std::size_t default_reactors =
+        hardware == 0 ? 1 : hardware;
+
+    reactor_count = static_cast<int>(
+        loadThreadCount(
+            "AORTA_REACTORS",
+            default_reactors
+        )
+    );
+
+    const std::size_t worker_count =
+        loadThreadCount(
+            "AORTA_WORKERS",
+            default_reactors / 2
+        );
 
     std::signal(SIGINT, handleSignal);
     std::signal(SIGTERM, handleSignal);
 
     worker_pool =
         std::make_unique<WorkerPool>(
-            static_cast<std::size_t>(reactor_count)
+            static_cast<std::size_t>(reactor_count),
+            worker_count
         );
 
     std::cout

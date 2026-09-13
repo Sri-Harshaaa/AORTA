@@ -1,5 +1,273 @@
 # AORTA performance investigation
 
+## Remaining-system investigation (2026-09-13)
+
+This section completes the load-balancer, Redis `/tasks`, same-host process
+scaling, and end-to-end work left open by the HTTP fast-path investigation
+below. The starting revision was `a3ab199`; its immediate-write server fast
+path is unchanged.
+
+### Method and limits
+
+All capacity tables are medians of three runs. Each cell used an independent
+2-second warmup followed by a 5-second measurement, eight wrk threads,
+HTTP/1.1 keep-alive, a five-second timeout, and identical affinity and
+concurrency within a comparison. Raw wrk and component CPU data are under
+`results/rest-*`. CPU is process CPU (100% is one logical CPU); the LB
+representative run additionally retains pidstat and per-CPU mpstat. Profiling
+and strace runs were separate and are not capacity measurements.
+
+The host has eight physical Zen 3 cores and SMT (16 logical CPUs). Logical
+siblings are adjacent. Direct/LB tests assigned backend CPUs 0-3, LB CPUs 4-7,
+and client CPUs 8-15. The same-host process-scaling test assigned all servers
+CPUs 0-7 and the client CPUs 8-15. The end-to-end task test assigned servers
+0-3, LB 4-5, Redis 6-7, and client 8-15. Frequency scaling, a shared desktop,
+short samples, and loopback introduce visible drift; these results establish
+bottleneck order and causal changes, not production capacity.
+
+### Confirmed bottleneck hierarchy
+
+1. **Redis is the end-to-end `/tasks` ceiling.** With three backends and the
+   LB, Redis remains at about 94% of one CPU while the LB is only 30-37% and
+   the three AORTA processes total about 201-205%. Median useful throughput is
+   about 9.5k req/s through c1000.
+2. **The LB/kernel relay path caps proxied `/hello`.** A four-reactor LB reaches
+   about 151k req/s at c1000 versus 223k direct. Its assigned CPUs are 99% busy:
+   approximately 54% system and 39% softirq each. Adding backend processes does
+   not raise throughput.
+3. **The web server and local load generator co-limit the direct fast path.**
+   On four physical server cores, one process reaches about 347k req/s at
+   c1000. At c5000 the client consumes about 546% CPU versus server 485%, so
+   wrk/network processing is explicitly a limiting component there.
+4. **Extra same-host processes do not scale this server.** With a fixed CPU
+   budget they add SO_REUSEPORT/event-loop scheduling overhead and reduce both
+   aggregate throughput and RPS/process-CPU-core. This is same-host multicore
+   scaling, not horizontal scaling.
+
+### L4 load balancer
+
+#### Direct versus proxy
+
+The selected LB configuration uses four reactors, which was the best tested
+match for its four-logical-CPU affinity. All runs completed without socket or
+HTTP errors.
+
+| Connections | Direct req/s | LB req/s | Proxy loss | Direct mean / p99 ms | LB mean / p99 ms | Direct server CPU % | LB backend / LB CPU % |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 213,814 | 180,101 | -15.8% | 1.10 / 5.91 | 0.53 / 0.71 | 286.6 | 238.2 / 240.4 |
+| 500 | 239,534 | 171,892 | -28.2% | 2.43 / 8.64 | 2.87 / 3.27 | 281.2 | 230.4 / 237.7 |
+| 1000 | 223,184 | 151,210 | -32.2% | 4.58 / 12.48 | 6.54 / 7.77 | 280.5 | 209.0 / 239.6 |
+| 5000 | 196,094 | 131,555 | -32.9% | 25.04 / 45.79 | 37.46 / 60.12 | 275.8 | 177.7 / 255.5 |
+
+The direct and proxy matrices ran at different times; the anomalous direct
+c100 latency and broad direct throughput range are host-drift evidence, not a
+claim that proxying improves latency. The throughput gap is stable at the
+higher concurrency levels where both paths are loaded.
+
+#### Profiler and syscall evidence
+
+In the baseline c500 perf capture, the two connection hash-table lookups
+account for 5.54% and 4.72% of user-cycle samples. `forwardData`/`flushData`
+lead into the unresolved kernel samples. A separate connection-churn profile
+finds `getaddrinfo` at 4.02%, malloc at 3.36%, free at 2.62%, and
+`connectToBackend` at 1.51%; those are setup costs, not steady-state
+keep-alive costs. Backend selection is once per client connection. Health
+checking is once per five seconds per reactor/backend and does not appear in
+the >=0.5% steady-state profile. LB routing/metrics state is reactor-local, so
+there is no shared request-path lock or metric atomic to remove.
+
+The baseline traced LB relayed 48,647 responses using 98,248 sends, 98,984
+receives, and 3,229 epoll controls. The final traced LB relayed approximately
+111,960 responses using 223,920 sends, 224,966 receives, and 3,231 epoll
+controls. Thus the LB itself requires about two sends and two receives per
+response; the backend adds its own send and receive/EAGAIN pair. Epoll controls
+are connection setup/teardown and backpressure work, not two unconditional
+operations per response. In the final trace, send/receive account for 96.2%
+of summed traced syscall time. A direct-server trace uses one send and two
+receives (the second is EAGAIN) per response.
+
+The representative untraced four-reactor run records 152,713 req/s, LB process
+CPU 239%, and backend CPU 213%. CPUs 4-7 have only 0.75-0.88% idle; each spends
+about 54% in system time and 39% in softirq. The kernel/socket relay is therefore
+the capacity cost hidden by process-only CPU. Perf lacked kernel symbols, so no
+finer kernel-function attribution is claimed.
+
+#### Reactor and backend scaling
+
+| LB reactors (same CPUs) | c1000 req/s | p99 ms | Backend CPU % | LB CPU % |
+|---:|---:|---:|---:|---:|
+| 1 | 50,965 | 21.90 | 67.5 | 62.3 |
+| 2 | 76,727 | 17.39 | 146.5 | 123.0 |
+| 4 | 151,386 | 8.00 | 208.8 | 239.4 |
+
+Four reactors remove reactor under-provisioning, but backend count still does
+not scale throughput:
+
+| Backends | c1000 req/s | p99 ms | Aggregate backend CPU % | LB CPU % | Request distribution |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 151,210 | 7.77 | 209.0 | 239.6 | 100% |
+| 2 | 147,316 | 7.90 | 223.7 | 236.0 | 50.1% / 49.9% |
+| 3 | 144,420 | 8.55 | 229.7 | 235.2 | 33.4% / 33.2% / 33.3% |
+
+Round-robin distribution is correct, but the LB CPU set is saturated before
+the backend CPU set. The measured LB limit for this host/configuration is about
+150k small responses/s at c1000; adding servers cannot cross it.
+
+#### LB change and rejected optimization
+
+The connection-close workload exposed a correctness defect: Linux can deliver
+`EPOLLIN|EPOLLRDHUP` (or HUP) together, while the LB previously half-closed the
+destination after only one read. That truncated buffered responses. Before the
+fix, an eight-second c100 `Connection: close` run completed 7,677 responses and
+reported 62,386 read errors (948 req/s). After the fix it completed 56,018
+responses without errors (6,917 req/s). The LB now drains on peer-close, defers
+`SHUT_WR` until the corresponding output buffer is empty, and tracks each
+write-half closure.
+
+This is intentionally not presented as a keep-alive throughput optimization.
+The identical two-reactor keep-alive c500 median was 90,654 req/s before and
+81,051 req/s after amid host drift. A subsequent experiment removed redundant
+map rechecks because perf showed hash lookups, but its c500 median was 82,260
+req/s and it did not reduce LB CPU. That experiment was reverted. DNS caching
+and zero-copy relay were also not introduced: DNS was only a connection-churn
+secondary cost, caching changes address-refresh semantics, and splice/io_uring
+would be an architectural change without measured evidence here.
+
+### `/tasks` and Redis
+
+#### Root cause and change
+
+The original single-round-trip Lua script executed `SMEMBERS`, then 100
+interpreted `HGETALL` operations for every 100-task response. Across the
+baseline matrix Redis records 267,759 EVAL calls, 26,775,800 HGETALL calls, and
+304.15 microseconds/EVAL. Redis stays at about 98% CPU while AORTA is only
+68-74% at c100-c1000. This rules out the worker mutex, reactor callbacks, and
+JSON serialization as the original saturation cause.
+
+`RedisClient::getAllTasks` now issues one native Redis command:
+`SORT tasks BY nosort GET # GET task:*->title GET task:*->completed`. It keeps
+the existing set/hash schema, one network round trip, missing-record filtering,
+and the existing C++ numeric-id sort. Across the after matrix Redis records
+740,038 SORT calls at 92.59 microseconds/call. No cache or consistency tradeoff
+was introduced.
+
+| Connections | Successful req/s before | Successful req/s after | Change | Mean ms before / after | p99 ms before / after | AORTA CPU % before / after | Redis CPU % before / after | Error % before / after |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 3,241 | 9,304 | +187% | 29.46 / 10.28 | 34.15 / 11.63 | 74.1 / 175.8 | 98.0 / 94.5 | 0 / 0 |
+| 500 | 3,396 | 9,808 | +189% | 143.16 / 50.03 | 192.76 / 53.32 | 70.6 / 173.7 | 97.9 / 94.7 | 0 / 0 |
+| 1000 | 3,258 | 9,593 | +194% | 295.72 / 102.36 | 462.03 / 107.41 | 68.1 / 175.0 | 97.9 / 94.6 | 0 / 0 |
+| 5000 | 1,822 | 5,331 | +193% | 309.30 / 166.41 | 1,580 / 703 | 288.9 / 308.6 | 95.9 / 72.8 | 98.90 / 95.72 |
+
+At c5000, total response rate is 165,534 before and 124,542 after, but almost
+all are bounded-queue 503 responses. Only successful RPS above is useful task
+throughput; the mixed wrk latency distribution includes both successes and
+fast rejections.
+
+The c500 user-cycle profile changes from 3,734 req/s and p99 147 ms to 12,174
+req/s and p99 43 ms in the separate profiled runs. Before, hiredis reply parsing
+is 6.62%, free/malloc 5.39%/4.59%, response JSON construction 3.75%, JSON
+escaping 3.19%, and `getAllTasks` 2.94%. After the Redis improvement, JSON
+construction rises to 7.00%, escaping to 5.68%, free/malloc to 5.83%/3.92%,
+hiredis reply parsing to 4.52%, and `getAllTasks` to 3.73%. These are now
+secondary CPU costs, but Redis is still the first saturated component, so no
+unproven serialization micro-optimization was made.
+
+#### Result-size sensitivity and pagination
+
+| Tasks returned | Baseline req/s / p99 ms | After req/s / p99 ms | After AORTA / Redis CPU % |
+|---:|---:|---:|---:|
+| 10 | 24,802 / 4.33 | 54,508 / 2.09 | 281.6 / 77.4 |
+| 100 | 3,239 / 34.15 | 9,308 / 11.63 | 175.8 / 94.5 |
+| 1000 | 335 / 442.38 | 1,281 / 75.33 | 127.4 / 99.1 |
+
+The native command is substantially faster at every size, but full-list cost
+still grows with the result set and Redis returns to 99% CPU at 1,000 tasks.
+The API has no pagination. Adding it safely requires an ordering/cursor and
+response-contract decision; changing the default `/tasks` response would be a
+breaking API change, so it remains the highest-impact tasks follow-up rather
+than being guessed during this performance patch.
+
+### Same-host server process scaling (no LB)
+
+The first table uses unchanged defaults: every process creates 16 reactors and
+8 workers even though all processes share CPUs 0-7.
+
+| Processes | c1000 req/s | p99 ms | Server CPU % | RPS/process-CPU-core | Client CPU % | c5000 req/s / p99 ms |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 347,484 | 6.82 | 537.0 | 64,712 | 541.9 | 299,626 / 27.96 |
+| 2 | 276,622 | 9.05 | 539.0 | 51,321 | 522.7 | 249,605 / 32.21 |
+| 4 | 242,524 | 10.66 | 544.1 | 44,575 | 504.4 | 221,773 / 35.96 |
+
+To isolate process count from event-loop count, a second matrix holds the total
+at four reactors/four workers: 4/4 for one process, 2/2 each for two, and 1/1
+each for four.
+
+| Processes | c1000 req/s | p99 ms | Server CPU % | RPS/process-CPU-core | c5000 req/s / p99 ms |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 302,165 | 6.30 | 279.3 | 108,168 | 285,613 / 22.95 |
+| 2 | 260,874 | 7.18 | 279.7 | 93,278 | 230,654 / 31.01 |
+| 4 | 222,809 | 8.30 | 276.0 | 80,734 | 209,555 / 31.09 |
+
+Extra processes reduce aggregate RPS in both matrices. SO_REUSEPORT balances
+connections but does not create capacity on a fixed host. `AORTA_REACTORS` and
+`AORTA_WORKERS` controls were added with unchanged hardware-derived defaults so
+deployments and affinity tests can avoid accidental oversubscription. The
+RPS/core column divides by measured process CPU and excludes softirq, so it is
+a process-efficiency metric rather than total machine efficiency.
+
+The single-process c1000 client and server each consume about 5.4 logical CPUs.
+At c5000 the client is higher (545.7% versus server 484.8%), making local wrk/
+loopback processing a co-bottleneck and preventing a clean server-only maximum.
+
+### End-to-end: client -> LB -> 3 AORTA servers -> Redis
+
+The Redis-backed topology used three distinct backend ports, two LB reactors,
+and one isolated Redis. Two LB reactors are sufficient here because `/tasks`
+throughput is an order of magnitude below the LB `/hello` ceiling.
+
+| Connections | Successful req/s | Mean ms | p99 ms | 3-server CPU % | LB CPU % | Redis CPU % | Client CPU % | Errors | Distribution |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 9,334 | 10.25 | 12.84 | 205.1 | 30.1 | 93.5 | 33.9 | 0 | 33.3/33.3/33.3% |
+| 500 | 9,621 | 50.99 | 62.01 | 201.1 | 33.5 | 93.7 | 34.4 | 0 | 33.3/33.3/33.3% |
+| 1000 | 9,502 | 103.13 | 112.42 | 200.9 | 33.7 | 93.9 | 35.2 | 0 | 33.3/33.4/33.3% |
+| 5000 | 8,568 | 434.96 | 721.43 | 201.1 | 36.9 | 93.6 | 37.2 | 0 | 33.4/33.4/33.3% |
+
+Redis reports 791,678 SORT calls at 91.71 microseconds/call and an ending
+instantaneous rate of 8,808 ops/s. Redis saturates first. Adding backend queues
+avoids the single-process c5000 rejection storm, but cannot raise storage
+throughput; it instead permits more queueing and much higher tail latency.
+
+### Correctness and retained evidence
+
+RelWithDebInfo and ASan/UBSan builds, their socket test suites, and
+`git diff --check` pass. The original reactor regression still
+passes keep-alive, HEAD, fragmented and pipelined input, connection close, a
+6 MiB paused reader with EAGAIN/EPOLLOUT resumption, and async callbacks. New
+task tests pass empty list, create, native listing, update, and delete against
+isolated Redis. New LB tests pass keep-alive, fragmented/pipelined relay,
+connection-close draining, balanced distribution, a verified 2 MiB paused
+reader, client disconnect, initial-connect failover, and health-driven removal.
+
+Key artifacts:
+
+* `results/rest-lb-profile/`: perf, strace, pidstat, mpstat and raw wrk.
+* `results/rest-tasks-profile/`: before/after perf and raw wrk.
+* `results/rest-direct-baseline/`, `rest-lb-r4-backends*/`: direct/proxy matrices.
+* `results/rest-tasks-baseline/`, `rest-tasks-after/`: Redis matrices and INFO.
+* `results/rest-scale*/`: default and controlled-thread process scaling.
+* `results/rest-e2e-tasks/`: full topology data and Redis INFO.
+* `results/rest-*-correctness.txt`: correctness outputs.
+
+Remaining bottlenecks are the LB's kernel TCP relay cost for small responses,
+Redis's single-threaded full-list operation and missing API pagination, and the
+local load generator on the direct high-rate path. Remote load generation,
+multiple hosts, Redis clustering/read replicas, TLS, and a pagination contract
+remain outside this measured same-host investigation.
+
+---
+
+## Earlier HTTP fast-path investigation
+
 The direct HTTP fast path spends avoidable work scheduling writes: every small
 response enables EPOLLOUT, waits for another readiness dispatch, writes, then
 disables EPOLLOUT. The targeted fix attempts the nonblocking write immediately,

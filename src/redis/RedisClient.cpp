@@ -512,45 +512,12 @@ bool RedisClient::getAllTasks(
         return false;
     }
 
-    static const char* SCRIPT = R"lua(
-local ids = redis.call('SMEMBERS', KEYS[1])
-local result = {}
-
-for _, id in ipairs(ids) do
-    local task_key = 'task:' .. id
-    local fields = redis.call('HGETALL', task_key)
-
-    local title = nil
-    local completed = nil
-
-    for i = 1, #fields, 2 do
-        local field = fields[i]
-        local value = fields[i + 1]
-
-        if field == 'title' then
-            title = value
-        elseif field == 'completed' then
-            completed = value
-        end
-    end
-
-    if title ~= nil and completed ~= nil then
-        table.insert(result, id)
-        table.insert(result, title)
-        table.insert(result, completed)
-    end
-end
-
-return result
-)lua";
-
     redisReply* reply =
         static_cast<redisReply*>(
             redisCommand(
                 context,
-                "EVAL %b 1 %b",
-                SCRIPT,
-                std::strlen(SCRIPT),
+                "SORT %b BY nosort GET # "
+                "GET task:*->title GET task:*->completed",
                 task_set_key.data(),
                 task_set_key.size()
             )
